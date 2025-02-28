@@ -3,14 +3,15 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Difficulty, GameState } from '@/app/types/game'
+import type { Difficulty, GameState, Player } from '@/app/types/game'
 import { GAME_CONFIG } from '@/app/config/constants'
 
 interface GameStore extends GameState {
   selectDifficulty: (difficulty: Difficulty) => void
   makeGuess: (guess: string) => void
   resetGame: () => void
-  setCurrentPlayer: (player: any) => void
+  startGame: (player: Player) => void
+  revealHint: () => void
 }
 
 export const useGame = create<GameStore>()(
@@ -18,43 +19,68 @@ export const useGame = create<GameStore>()(
     (set) => ({
       selectedDifficulty: null,
       attempts: [],
-      isComplete: false,
-      isSuccess: false,
-      currentPlayer: undefined,
+      currentPlayer: null,
+      gameStatus: 'idle',
+      hintsRevealed: 0,
 
       selectDifficulty: (difficulty) => 
         set({ 
           selectedDifficulty: difficulty, 
           attempts: [], 
-          isComplete: false, 
-          isSuccess: false,
-          currentPlayer: undefined
+          gameStatus: 'idle',
+          hintsRevealed: 0,
+          currentPlayer: null
+        }),
+
+      startGame: (player) =>
+        set({ 
+          currentPlayer: player,
+          gameStatus: 'playing',
+          hintsRevealed: 0,
+          attempts: []
         }),
 
       makeGuess: (guess) =>
         set((state) => {
           const attempts = [...state.attempts, guess]
-          const isComplete = attempts.length >= GAME_CONFIG.MAX_ATTEMPTS
-          const isSuccess = state.currentPlayer && 
+          const maxAttempts = state.selectedDifficulty ? 
+            GAME_CONFIG.difficulties[state.selectedDifficulty].maxAttempts : 
+            GAME_CONFIG.MAX_ATTEMPTS
+          
+          const isCorrect = state.currentPlayer && 
             guess.toLowerCase() === state.currentPlayer.college.toLowerCase()
+          
+          let gameStatus = state.gameStatus
+          
+          if (isCorrect) {
+            gameStatus = 'won'
+          } else if (attempts.length >= maxAttempts) {
+            gameStatus = 'lost'
+          }
           
           return {
             attempts,
-            isComplete: isComplete || isSuccess,
-            isSuccess
+            gameStatus
           }
         }),
 
-      setCurrentPlayer: (player) =>
-        set({ currentPlayer: player }),
+      revealHint: () =>
+        set((state) => ({
+          hintsRevealed: Math.min(
+            state.hintsRevealed + 1,
+            state.selectedDifficulty ? 
+              GAME_CONFIG.difficulties[state.selectedDifficulty].hintCount : 
+              3
+          )
+        })),
 
       resetGame: () =>
         set({ 
           selectedDifficulty: null, 
           attempts: [], 
-          isComplete: false, 
-          isSuccess: false,
-          currentPlayer: undefined
+          gameStatus: 'idle',
+          hintsRevealed: 0,
+          currentPlayer: null
         }),
     }),
     {

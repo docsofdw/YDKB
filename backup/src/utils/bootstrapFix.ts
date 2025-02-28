@@ -44,18 +44,23 @@ export function initBootstrapFixes(): void {
     });
     
     // Create a proxy to safely handle any unexpected property access
-    window.domQueryService = new Proxy(window.domQueryService, {
-      get: function(target, prop) {
-        if (typeof target[prop] === 'function') {
-          return target[prop];
+    const originalService = window.domQueryService;
+    
+    // Ensure we have a valid target for the Proxy
+    if (originalService) {
+      window.domQueryService = new Proxy(originalService as object, {
+        get: function(target: any, prop: string | symbol) {
+          if (typeof target[prop] === 'function') {
+            return target[prop];
+          }
+          // Return a safe default function for any undefined method
+          return function() { 
+            console.warn(`Called undefined method domQueryService.${String(prop)}`);
+            return false; 
+          };
         }
-        // Return a safe default function for any undefined method
-        return function() { 
-          console.warn(`Called undefined method domQueryService.${String(prop)}`);
-          return false; 
-        };
-      }
-    });
+      });
+    }
     
     // Fix for bootstrap-legacy-aut-overlay.js
     if (typeof window.checkPageContainsShadowDom === 'undefined') {

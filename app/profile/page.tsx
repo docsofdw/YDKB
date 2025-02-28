@@ -1,4 +1,5 @@
-import { currentUser, UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
@@ -32,18 +33,28 @@ async function getUserStats(userId: string) {
 export default async function ProfilePage() {
   // Wrap in try/catch to handle potential Clerk errors
   try {
-    const user = await currentUser();
+    const auth_result = await auth();
+    const userId = auth_result.userId;
     
     // If no user is found, redirect to login
-    if (!user) {
+    if (!userId) {
       redirect("/login");
     }
 
+    // Get user details from Clerk
+    const res = await fetch(`https://api.clerk.dev/v1/users/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
+      },
+    });
+    
+    const user = await res.json();
+
     // Fetch user-specific stats
-    const userStats = await getUserStats(user.id);
+    const userStats = await getUserStats(userId);
 
     // Format date for better display
-    const memberSince = new Date(user.createdAt).toLocaleDateString('en-US', {
+    const memberSince = new Date(user.created_at).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

@@ -14,14 +14,16 @@ const publicPaths = [
 const isPublic = createRouteMatcher(publicPaths);
 
 // Use the clerkMiddleware with proper configuration
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   // If the route is public, allow access
   if (isPublic(req)) {
     return NextResponse.next();
   }
   
   // For protected routes, check if user is authenticated
-  if (!auth.userId) {
+  // Get the auth object and check if user is authenticated
+  const authObject = await auth();
+  if (!authObject.userId) {
     const signInUrl = new URL('/login', req.url);
     signInUrl.searchParams.set('redirect_url', req.url);
     return NextResponse.redirect(signInUrl);
@@ -34,7 +36,7 @@ export default clerkMiddleware((auth, req) => {
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|_next/webpack|favicon.ico|.+\\.css|.+\\.js|.+\\.png|.+\\.svg|.+\\.jpg|.+\\.jpeg|.+\\.gif).*)',
     // Match all API routes
     '/api/:path*',
   ],

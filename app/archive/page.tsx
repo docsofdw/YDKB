@@ -1,6 +1,6 @@
 // app/archive/page.tsx
 import Link from "next/link"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/common/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/app/components/ui/card"
 
 export default function ArchivePage() {
   return (

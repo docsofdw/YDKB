@@ -1,59 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-  }
+:root {
+  /* YDKB Brand Colors */
+  --deep-slate: #121620;
+  --turf-green: #00A550;
+  --pigskin-brown: #8B4513;
+  --midnight-navy: #1A1F2E;
+  --chalk-white: #F5F5F5;
+  --silver-gray: #C0C0C0;
+  
+  /* Functional Colors */
+  --victory-green: #00A550;
+  --penalty-red: #E53935;
+  --warning-yellow: #FFC107;
+  --highlight-blue: #0288D1;
+  
+  /* Difficulty Level Colors */
+  --easy: #00A550;
+  --hard: #FFC107;
+  --hall-of-fame: #9C27B0;
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  html {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--deep-slate);
+    color: var(--chalk-white);
   }
+  
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--deep-slate);
+    color: var(--chalk-white);
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+  }
+  
+  h1 {
+    font-size: 32px;
+    font-weight: 800;
+  }
+  
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+  }
+  
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+@layer components {
+  /* Button Styles */
+  .btn-primary {
+    @apply bg-turf-green text-deep-slate font-semibold py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block border-0 cursor-pointer;
+  }
+  
+  .btn-primary:hover {
+    @apply brightness-110;
+  }
+  
+  .btn-primary:active {
+    @apply brightness-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-transparent text-highlight-blue border border-highlight-blue font-medium py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block cursor-pointer;
+  }
+  
+  .btn-secondary:hover {
+    @apply brightness-110;
+  }
+  
+  .btn-secondary:active {
+    @apply brightness-95;
+  }
+  
+  .btn-success {
+    @apply bg-victory-green text-chalk-white font-medium py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block border-0 cursor-pointer;
+  }
+  
+  .btn-danger {
+    @apply bg-penalty-red text-chalk-white font-medium py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block border-0 cursor-pointer;
+  }
+  
+  .btn-compact {
+    @apply py-1 px-2 text-body-small;
+  }
+  
+  /* Card Styles */
+  .card {
+    @apply bg-midnight-navy rounded-card shadow-card p-6 transition-all duration-200;
+  }
+  
+  .card:hover {
+    @apply scale-[1.02];
+  }
+  
+  /* Input Styles */
+  .input-field {
+    @apply h-10 rounded-input border border-silver-gray py-2 px-3 bg-transparent text-chalk-white;
+  }
+  
+  .input-field:focus {
+    @apply border-2 border-highlight-blue outline-none;
+  }
+  
+  .input-error {
+    @apply border-2 border-penalty-red;
+  }
+  
+  /* Game Grid Styles */
+  .game-grid-cell {
+    @apply border border-silver-gray/20 transition-all duration-150;
+  }
+  
+  .game-grid-cell:hover {
+    @apply bg-midnight-navy/50;
+  }
+  
+  .game-grid-cell-selected {
+    @apply border-highlight-blue;
+  }
+  
+  .game-grid-cell-correct {
+    @apply border-victory-green bg-victory-green/10;
+  }
+  
+  .game-grid-cell-incorrect {
+    @apply border-penalty-red bg-penalty-red/10;
+  }
+  
+  /* Text Colors */
+  .text-turf-green {
+    color: var(--turf-green);
+  }
+  
+  .text-chalk-white {
+    color: var(--chalk-white);
+  }
+  
+  .text-silver-gray {
+    color: var(--silver-gray);
+  }
+  
+  .text-highlight-blue {
+    color: var(--highlight-blue);
+  }
+  
+  /* Background Colors */
+  .bg-deep-slate {
+    background-color: var(--deep-slate);
+  }
+  
+  .bg-midnight-navy {
+    background-color: var(--midnight-navy);
+  }
+  
+  .bg-turf-green {
+    background-color: var(--turf-green);
   }
 } 

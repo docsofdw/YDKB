@@ -103,10 +103,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useGame() {
+export function useGameContext() {
   const context = useContext(GameContext)
   if (context === undefined) {
-    throw new Error("useGame must be used within a GameProvider")
+    throw new Error("useGameContext must be used within a GameProvider")
   }
   return context
 } 

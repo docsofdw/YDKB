@@ -38,10 +38,10 @@ export default function HomePage() {
   // Loading state
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="flex items-center justify-center min-h-screen bg-deep-slate">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-gray-300">Loading...</p>
+          <div className="w-16 h-16 border-4 border-turf-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-chalk-white">Loading...</p>
         </div>
       </div>
     );
@@ -56,75 +56,27 @@ export default function HomePage() {
   // NON-AUTHENTICATED USER LANDING PAGE STARTS HERE
   // ========================================================================
   return (
-    <div style={{ backgroundColor: '#111827', color: 'white', minHeight: '100vh', padding: '2rem' }}>
+    <div className="bg-deep-slate text-chalk-white min-h-screen">
       {/* Hero Section */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center', paddingTop: '2rem', paddingBottom: '3rem' }}>
+      <section className="max-w-[1200px] mx-auto text-center py-16 px-4">
         <div>
-          <span style={{ 
-            backgroundColor: '#F59E0B', 
-            color: '#111827', 
-            padding: '0.5rem 1rem', 
-            fontWeight: 'bold', 
-            borderRadius: '0.25rem', 
-            textTransform: 'uppercase', 
-            fontSize: '0.875rem',
-            display: 'inline-block',
-            marginBottom: '1.5rem'
-          }}>
-            Test Your Knowledge Daily
+          <span className="bg-turf-green text-deep-slate px-4 py-2 font-semibold rounded-md text-sm uppercase inline-block mb-6">
+            Test Your NFL College Knowledge Daily
           </span>
           
-          <h1 style={{ 
-            fontSize: '3.5rem', 
-            fontWeight: '800', 
-            marginBottom: '1.5rem', 
-            lineHeight: '1.2'
-          }}>
-            You Don't Know <span style={{ color: '#F59E0B' }}>Ball</span>
+          <h1 className="text-heading-1 font-extrabold mb-6 font-montserrat leading-tight">
+            You Don't Know <span className="text-turf-green">Ball</span>
           </h1>
           
-          <p style={{ 
-            fontSize: '1.25rem', 
-            color: '#D1D5DB', 
-            marginBottom: '2.5rem', 
-            maxWidth: '48rem', 
-            margin: '0 auto 2.5rem'
-          }}>
-            Test your college football knowledge with our daily challenges and dominate the leaderboard!
+          <p className="text-body-large text-silver-gray mb-10 max-w-2xl mx-auto">
+            Test your knowledge of NFL players' college careers with our daily challenges and dominate the leaderboard!
           </p>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center', alignItems: 'center' }}>
-            <Link href="/signup" style={{ 
-              backgroundColor: '#F59E0B', 
-              color: '#111827', 
-              fontWeight: 'bold', 
-              padding: '1rem 2.5rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-              display: 'inline-block',
-              width: '100%',
-              maxWidth: '300px',
-              textAlign: 'center'
-            }}>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link href="/signup" className="btn-primary w-full sm:w-auto px-8 py-3 uppercase font-semibold">
               Sign Up Free
             </Link>
-            <Link href="/login" style={{ 
-              backgroundColor: '#1F2937', 
-              color: 'white', 
-              fontWeight: 'bold', 
-              padding: '1rem 2.5rem', 
-              borderRadius: '0.25rem', 
-              border: '1px solid #374151',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-              display: 'inline-block',
-              width: '100%',
-              maxWidth: '300px',
-              textAlign: 'center'
-            }}>
+            <Link href="/login" className="btn-secondary w-full sm:w-auto px-8 py-3 uppercase font-semibold">
               Sign In
             </Link>
           </div>
@@ -132,234 +84,171 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section style={{ backgroundColor: '#1F2937', padding: '4rem 2rem', marginTop: '2rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <span style={{ 
-              backgroundColor: '#F59E0B', 
-              color: '#111827', 
-              padding: '0.25rem 0.75rem', 
-              fontWeight: 'bold', 
-              borderRadius: '0.25rem', 
-              textTransform: 'uppercase', 
-              fontSize: '0.75rem',
-              display: 'inline-block',
-              marginBottom: '0.75rem'
-            }}>
+      <section className="bg-midnight-navy py-16 px-4 mt-8">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="text-center mb-16">
+            <span className="bg-turf-green text-deep-slate px-3 py-1 font-semibold rounded-md text-xs uppercase inline-block mb-3">
               Intense & Competitive
             </span>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
+            <h2 className="text-heading-2 font-bold uppercase font-montserrat">
               How It Works
             </h2>
           </div>
 
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-            gap: '1.5rem' 
-          }}>
-            <div style={{ 
-              backgroundColor: '#374151', 
-              padding: '2rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              borderLeft: '4px solid #F59E0B' 
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🏈</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card border-l-4 border-l-turf-green">
+              <div className="text-4xl mb-6">🏈</div>
+              <h3 className="text-heading-3 font-semibold mb-3 uppercase font-montserrat">
                 Daily Challenges
               </h3>
-              <p style={{ color: '#D1D5DB' }}>
+              <p className="text-silver-gray">
                 New football players to identify every day with increasing difficulty levels.
               </p>
             </div>
             
-            <div style={{ 
-              backgroundColor: '#374151', 
-              padding: '2rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              borderLeft: '4px solid #F59E0B' 
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🏆</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <div className="card border-l-4 border-l-turf-green">
+              <div className="text-4xl mb-6">🏆</div>
+              <h3 className="text-heading-3 font-semibold mb-3 uppercase font-montserrat">
                 Compete & Rank
               </h3>
-              <p style={{ color: '#D1D5DB' }}>
+              <p className="text-silver-gray">
                 Compare your scores with other players and dominate the global leaderboard.
               </p>
             </div>
             
-            <div style={{ 
-              backgroundColor: '#374151', 
-              padding: '2rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              borderLeft: '4px solid #F59E0B' 
-            }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>📊</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <div className="card border-l-4 border-l-turf-green">
+              <div className="text-4xl mb-6">📊</div>
+              <h3 className="text-heading-3 font-semibold mb-3 uppercase font-montserrat">
                 Track Progress
               </h3>
-              <p style={{ color: '#D1D5DB' }}>
-                Monitor your performance over time and unlock achievements as you improve.
+              <p className="text-silver-gray">
+                Monitor your performance over time and see your knowledge improve.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Difficulty Levels Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="text-center mb-16">
+            <span className="bg-turf-green text-deep-slate px-3 py-1 font-semibold rounded-md text-xs uppercase inline-block mb-3">
+              Challenge Yourself
+            </span>
+            <h2 className="text-heading-2 font-bold uppercase font-montserrat">
+              Difficulty Levels
+            </h2>
+            <p className="text-silver-gray max-w-2xl mx-auto mt-4">
+              Choose your challenge level and test your knowledge against increasingly difficult questions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card border-t-4 border-t-easy">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-heading-3 font-semibold uppercase font-montserrat">Easy</h3>
+                <span className="bg-easy/20 text-easy px-2 py-1 rounded text-xs font-medium">Rookie</span>
+              </div>
+              <p className="text-silver-gray mb-4">
+                Recent NFL stars and well-known college programs. Perfect for casual fans.
+              </p>
+              <div className="flex justify-between text-sm">
+                <span className="text-silver-gray">Success Rate:</span>
+                <span className="text-chalk-white">75%</span>
+              </div>
+            </div>
+            
+            <div className="card border-t-4 border-t-hard">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-heading-3 font-semibold uppercase font-montserrat">Hard</h3>
+                <span className="bg-hard/20 text-hard px-2 py-1 rounded text-xs font-medium">Veteran</span>
+              </div>
+              <p className="text-silver-gray mb-4">
+                Less obvious players and college connections. For the serious football fan.
+              </p>
+              <div className="flex justify-between text-sm">
+                <span className="text-silver-gray">Success Rate:</span>
+                <span className="text-chalk-white">45%</span>
+              </div>
+            </div>
+            
+            <div className="card border-t-4 border-t-hall-of-fame">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-heading-3 font-semibold uppercase font-montserrat">Hall of Fame</h3>
+                <span className="bg-hall-of-fame/20 text-hall-of-fame px-2 py-1 rounded text-xs font-medium">Legend</span>
+              </div>
+              <p className="text-silver-gray mb-4">
+                Obscure players and college history. Only for the most dedicated football historians.
+              </p>
+              <div className="flex justify-between text-sm">
+                <span className="text-silver-gray">Success Rate:</span>
+                <span className="text-chalk-white">15%</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section style={{ 
-        padding: '4rem 2rem', 
-        borderTop: '1px solid #374151', 
-        borderBottom: '1px solid #374151' 
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ 
-            fontSize: '2.25rem', 
-            fontWeight: 'bold', 
-            textAlign: 'center', 
-            marginBottom: '3rem', 
-            textTransform: 'uppercase' 
-          }}>
-            Community Stats
-          </h2>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-            gap: '1rem' 
-          }}>
-            <div style={{ 
-              backgroundColor: '#1F2937', 
-              padding: '1.5rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              textAlign: 'center', 
-              borderTop: '4px solid #F59E0B' 
-            }}>
-              <p style={{ 
-                color: '#F59E0B', 
-                fontSize: '0.875rem', 
-                textTransform: 'uppercase', 
-                fontWeight: 'bold', 
-                letterSpacing: '0.05em' 
-              }}>
-                PLAYERS
-              </p>
-              <p style={{ fontSize: '1.875rem', fontWeight: 'bold', marginTop: '0.75rem' }}>
-                {stats.totalPlayers.toLocaleString()}
-              </p>
+      <section className="bg-midnight-navy py-16 px-4">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="text-center mb-16">
+            <span className="bg-turf-green text-deep-slate px-3 py-1 font-semibold rounded-md text-xs uppercase inline-block mb-3">
+              Community Stats
+            </span>
+            <h2 className="text-heading-2 font-bold uppercase font-montserrat">
+              Join The Competition
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="text-turf-green text-5xl font-bold mb-2 font-montserrat">{stats.totalPlayers.toLocaleString()}</div>
+              <p className="text-silver-gray uppercase text-sm tracking-wider">Active Players</p>
             </div>
-            
-            <div style={{ 
-              backgroundColor: '#1F2937', 
-              padding: '1.5rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              textAlign: 'center', 
-              borderTop: '4px solid #F59E0B' 
-            }}>
-              <p style={{ 
-                color: '#F59E0B', 
-                fontSize: '0.875rem', 
-                textTransform: 'uppercase', 
-                fontWeight: 'bold', 
-                letterSpacing: '0.05em' 
-              }}>
-                GAMES PLAYED
-              </p>
-              <p style={{ fontSize: '1.875rem', fontWeight: 'bold', marginTop: '0.75rem' }}>
-                {stats.totalGames.toLocaleString()}
-              </p>
+            <div className="text-center">
+              <div className="text-turf-green text-5xl font-bold mb-2 font-montserrat">{stats.totalGames.toLocaleString()}</div>
+              <p className="text-silver-gray uppercase text-sm tracking-wider">Games Played</p>
             </div>
-            
-            <div style={{ 
-              backgroundColor: '#1F2937', 
-              padding: '1.5rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              textAlign: 'center', 
-              borderTop: '4px solid #F59E0B' 
-            }}>
-              <p style={{ 
-                color: '#F59E0B', 
-                fontSize: '0.875rem', 
-                textTransform: 'uppercase', 
-                fontWeight: 'bold', 
-                letterSpacing: '0.05em' 
-              }}>
-                AVG SCORE
-              </p>
-              <p style={{ fontSize: '1.875rem', fontWeight: 'bold', marginTop: '0.75rem' }}>
-                {stats.averageScore}
-              </p>
-            </div>
-            
-            <div style={{ 
-              backgroundColor: '#1F2937', 
-              padding: '1.5rem', 
-              borderRadius: '0.25rem', 
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-              textAlign: 'center', 
-              borderTop: '4px solid #F59E0B' 
-            }}>
-              <p style={{ 
-                color: '#F59E0B', 
-                fontSize: '0.875rem', 
-                textTransform: 'uppercase', 
-                fontWeight: 'bold', 
-                letterSpacing: '0.05em' 
-              }}>
-                TODAY'S DATE
-              </p>
-              <p style={{ fontSize: '1rem', fontWeight: 'bold', marginTop: '0.75rem' }}>
-                {currentDate}
-              </p>
+            <div className="text-center">
+              <div className="text-turf-green text-5xl font-bold mb-2 font-montserrat">{stats.averageScore}</div>
+              <p className="text-silver-gray uppercase text-sm tracking-wider">Average Score</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section style={{ 
-        padding: '5rem 2rem', 
-        textAlign: 'center', 
-        background: 'linear-gradient(to bottom, #111827, #1F2937)' 
-      }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h2 style={{ 
-            fontSize: '2.25rem', 
-            fontWeight: 'bold', 
-            marginBottom: '1.5rem', 
-            textTransform: 'uppercase' 
-          }}>
+      <section className="py-16 px-4">
+        <div className="max-w-[800px] mx-auto text-center">
+          <h2 className="text-heading-2 font-bold mb-6 font-montserrat">
             Ready to Test Your Knowledge?
           </h2>
-          <p style={{ 
-            fontSize: '1.25rem', 
-            color: '#D1D5DB', 
-            marginBottom: '2.5rem', 
-            fontWeight: '500' 
-          }}>
-            Join thousands of football fans and put your college gridiron expertise to the test.
+          <p className="text-silver-gray mb-8 text-body-large">
+            Sign up now to start playing and see how you stack up against other football fans!
           </p>
-          
-          <Link href="/signup" style={{ 
-            backgroundColor: '#F59E0B', 
-            color: '#111827', 
-            fontWeight: 'bold', 
-            padding: '1rem 2.5rem', 
-            borderRadius: '0.25rem', 
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', 
-            textTransform: 'uppercase',
-            textDecoration: 'none',
-            display: 'inline-block'
-          }}>
-            Get Started
+          <Link href="/signup" className="btn-primary px-8 py-3 uppercase font-semibold inline-block">
+            Get Started Free
           </Link>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-midnight-navy py-8 px-4 border-t border-midnight-navy/50">
+        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row justify-between items-center">
+          <div className="mb-4 md:mb-0">
+            <div className="text-xl font-extrabold text-turf-green font-montserrat mb-2">YDKB</div>
+            <p className="text-silver-gray text-sm">© {new Date().getFullYear()} You Don't Know Ball. All rights reserved.</p>
+          </div>
+          <div className="flex gap-6">
+            <Link href="/about" className="text-silver-gray hover:text-chalk-white transition-colors duration-150">About</Link>
+            <Link href="/privacy" className="text-silver-gray hover:text-chalk-white transition-colors duration-150">Privacy</Link>
+            <Link href="/terms" className="text-silver-gray hover:text-chalk-white transition-colors duration-150">Terms</Link>
+            <Link href="/contact" className="text-silver-gray hover:text-chalk-white transition-colors duration-150">Contact</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 } 

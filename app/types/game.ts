@@ -8,6 +8,10 @@ export interface Player {
   draftYear: number
   team: string
   imageUrl?: string
+  bio?: string
+  collegeBio?: string
+  difficulty?: string
+  stats?: Record<string, string | number>
 }
 
 export interface GameState {

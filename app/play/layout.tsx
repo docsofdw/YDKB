@@ -1,4 +1,4 @@
-import { GameProvider } from "@/app/hooks/useGame"
+import { GameProvider } from "@/app/hooks/useGameContext"
 
 export default function PlayLayout({
   children,

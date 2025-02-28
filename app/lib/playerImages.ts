@@ -51,8 +51,8 @@ export async function getPlayerImage(playerName: string): Promise<string | null>
           return data.player[0].strThumb;
         }
       }
-    } catch (fetchError) {
-      if (fetchError.name === 'AbortError') {
+    } catch (fetchError: unknown) {
+      if (fetchError && typeof fetchError === 'object' && 'name' in fetchError && fetchError.name === 'AbortError') {
         console.warn('Fetch request timed out for player image');
       } else {
         console.error('Error in fetch request:', fetchError);

@@ -38,24 +38,24 @@ export default function AuthenticatedHome() {
   ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-deep-slate text-chalk-white">
       {/* Welcome Section */}
       <section className="py-8 md:py-12 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-[1200px] mx-auto">
           <motion.div
-            className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 md:p-8 shadow-sm"
+            className="bg-midnight-navy rounded-xl p-6 md:p-8 shadow-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome Back!</h1>
-            <p className="text-gray-600 mb-6">Ready to test your basketball knowledge today?</p>
+            <h1 className="text-heading-1 font-bold mb-2 font-montserrat">Welcome Back!</h1>
+            <p className="text-silver-gray mb-6">Ready to test your NFL college knowledge today?</p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/play" className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-center">
+              <Link href="/play" className="btn-primary text-center">
                 Play Today's Challenge
               </Link>
-              <Link href="/profile" className="bg-white text-indigo-600 font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-indigo-200 text-center">
+              <Link href="/profile" className="btn-secondary text-center">
                 View Your Stats
               </Link>
             </div>
@@ -65,91 +65,91 @@ export default function AuthenticatedHome() {
 
       {/* Main Content Grid */}
       <section className="py-6 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Daily Challenge Card */}
           <motion.div 
-            className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+            className="card border-l-4 border-l-turf-green"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <span className="text-2xl mr-2">🏀</span> 
+            <h2 className="text-heading-2 font-semibold mb-4 flex items-center font-montserrat">
+              <span className="text-2xl mr-2">🏈</span> 
               {dailyChallenge.title}
             </h2>
-            <p className="text-gray-600 mb-3">{dailyChallenge.description}</p>
+            <p className="text-silver-gray mb-3">{dailyChallenge.description}</p>
             <div className="flex justify-between items-center mb-4">
-              <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">
+              <span className="bg-turf-green/20 text-turf-green text-xs font-medium px-2.5 py-0.5 rounded">
                 {dailyChallenge.difficulty}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-silver-gray">
                 {dailyChallenge.completionRate}% completion rate
               </span>
             </div>
-            <Link href="/play" className="w-full bg-indigo-600 text-white text-center py-2 rounded-lg hover:bg-indigo-700 transition-colors block">
+            <Link href="/play" className="btn-primary w-full text-center block">
               Start Challenge
             </Link>
           </motion.div>
 
           {/* User Stats Card */}
           <motion.div 
-            className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+            className="card border-l-4 border-l-highlight-blue"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <h2 className="text-heading-2 font-semibold mb-4 flex items-center font-montserrat">
               <span className="text-2xl mr-2">📊</span> 
               Your Stats
             </h2>
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-gray-500 text-xs">Current Rank</p>
-                <p className="text-xl font-bold">{userStats.rank}</p>
+              <div className="bg-deep-slate p-3 rounded-lg">
+                <p className="text-silver-gray text-xs">Current Rank</p>
+                <p className="text-xl font-bold text-chalk-white">{userStats.rank}</p>
               </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-gray-500 text-xs">Avg Score</p>
-                <p className="text-xl font-bold">{userStats.averageScore}</p>
+              <div className="bg-deep-slate p-3 rounded-lg">
+                <p className="text-silver-gray text-xs">Avg Score</p>
+                <p className="text-xl font-bold text-chalk-white">{userStats.averageScore}</p>
               </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-gray-500 text-xs">Games Played</p>
-                <p className="text-xl font-bold">{userStats.totalPlayed}</p>
+              <div className="bg-deep-slate p-3 rounded-lg">
+                <p className="text-silver-gray text-xs">Games Played</p>
+                <p className="text-xl font-bold text-chalk-white">{userStats.totalPlayed}</p>
               </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-gray-500 text-xs">Current Streak</p>
-                <p className="text-xl font-bold">{userStats.streak} days</p>
+              <div className="bg-deep-slate p-3 rounded-lg">
+                <p className="text-silver-gray text-xs">Current Streak</p>
+                <p className="text-xl font-bold text-chalk-white">{userStats.streak} days</p>
               </div>
             </div>
-            <Link href="/profile" className="text-indigo-600 text-sm font-medium hover:text-indigo-800 transition-colors flex items-center justify-center">
+            <Link href="/profile" className="text-highlight-blue text-sm font-medium hover:text-highlight-blue/80 transition-colors flex items-center justify-center">
               View Full Stats <span className="ml-1">→</span>
             </Link>
           </motion.div>
 
           {/* Community Activity Card */}
           <motion.div 
-            className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+            className="card border-l-4 border-l-victory-green"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.3 }}
           >
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <h2 className="text-heading-2 font-semibold mb-4 flex items-center font-montserrat">
               <span className="text-2xl mr-2">🏆</span> 
               Recent Activity
             </h2>
             <div className="space-y-3">
               {recentActivity.map((activity, index) => (
-                <div key={index} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                <div key={index} className="flex justify-between items-center p-2 hover:bg-deep-slate rounded-lg transition-colors">
                   <div>
-                    <p className="font-medium">{activity.user}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
+                    <p className="font-medium text-chalk-white">{activity.user}</p>
+                    <p className="text-xs text-silver-gray">{activity.time}</p>
                   </div>
-                  <div className="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded">
+                  <div className="bg-victory-green/20 text-victory-green text-sm font-medium px-2.5 py-0.5 rounded">
                     {activity.score}
                   </div>
                 </div>
               ))}
             </div>
-            <Link href="/leaderboard" className="text-indigo-600 text-sm font-medium hover:text-indigo-800 transition-colors flex items-center justify-center mt-4">
+            <Link href="/leaderboard" className="text-highlight-blue text-sm font-medium hover:text-highlight-blue/80 transition-colors flex items-center justify-center mt-4">
               View Leaderboard <span className="ml-1">→</span>
             </Link>
           </motion.div>

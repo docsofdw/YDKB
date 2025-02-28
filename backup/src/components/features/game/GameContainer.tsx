@@ -8,11 +8,34 @@ import { AttemptsDisplay } from "./AttemptsDisplay"
 import { useGame } from "@/hooks/useGame"
 import QuestionCard from "@/components/QuestionCard"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { Difficulty } from "@/types/game"
+
+// Define types for the player data
+// This should match the interface in QuestionCard.tsx
+interface PlayerOption {
+  id: number;
+  name: string;
+  team: string;
+  position: string;
+  jersey_number: string;
+  ppg: number;
+  college: string;
+  height?: string;
+  weight?: string;
+  experience?: string;
+}
+
+interface PlayerData {
+  question: string;
+  options: PlayerOption[];
+  correctOption: number;
+  player: any; // Using any for now, ideally this would be a more specific type
+}
 
 export function GameContainer() {
   const { selectedDifficulty, attempts, makeGuess, setCurrentPlayer } = useGame()
-  const [playerData, setPlayerData] = useState(null)
-  const [selectedOption, setSelectedOption] = useState(null)
+  const [playerData, setPlayerData] = useState<PlayerData | null>(null)
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +46,7 @@ export function GameContainer() {
     }
   }, [selectedDifficulty])
 
-  const fetchPlayerData = async (difficulty) => {
+  const fetchPlayerData = async (difficulty: Difficulty) => {
     try {
       setLoading(true)
       setError(null)
@@ -80,7 +103,7 @@ export function GameContainer() {
       // Get some options for the question (including the correct answer)
       const { data: options, error: optionsError } = await supabase
         .from('players')
-        .select('id, name, college')
+        .select('id, name, college, team, position, jersey_number, ppg, height, weight, experience')
         .limit(4)
       
       if (optionsError) {
@@ -96,7 +119,14 @@ export function GameContainer() {
         formattedOptions[0] = {
           id: playerInfo.id,
           name: playerInfo.name,
-          college: playerInfo.college
+          college: playerInfo.college,
+          team: playerInfo.team || '',
+          position: playerInfo.position || '',
+          jersey_number: playerInfo.jersey_number || '',
+          ppg: playerInfo.ppg || 0,
+          height: playerInfo.height,
+          weight: playerInfo.weight,
+          experience: playerInfo.experience
         }
       }
       
@@ -107,7 +137,7 @@ export function GameContainer() {
       const correctIndex = formattedOptions.findIndex(p => p.id === playerId)
       
       // Format the data to match what the component expects
-      const formattedData = {
+      const formattedData: PlayerData = {
         question: "Which college did this player attend?",
         options: formattedOptions,
         correctOption: correctIndex,
@@ -118,14 +148,18 @@ export function GameContainer() {
       
     } catch (err) {
       console.error('Error fetching player data:', err)
-      setError(err.message || 'Failed to load player data')
+      setError(
+        err && typeof err === 'object' && 'message' in err 
+          ? err.message as string 
+          : 'Failed to load player data'
+      )
     } finally {
       setLoading(false)
     }
   }
 
   // Helper function to shuffle an array
-  const shuffleArray = (array) => {
+  const shuffleArray = <T,>(array: T[]): T[] => {
     const newArray = [...array]
     for (let i = newArray.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
@@ -142,14 +176,14 @@ export function GameContainer() {
     }
   }
 
-  const handleOptionSelect = (index) => {
+  const handleOptionSelect = (index: number) => {
     setSelectedOption(index)
     
     if (playerData && index === playerData.correctOption) {
       setShowAnswer(true)
       makeGuess(playerData.options[index].college)
-    } else {
-      handleGuess(playerData?.options[index]?.college || "Unknown")
+    } else if (playerData && playerData.options[index]) {
+      handleGuess(playerData.options[index].college || "Unknown")
     }
   }
 
@@ -163,7 +197,7 @@ export function GameContainer() {
         <p className="text-white text-lg">Error: {error}</p>
         <button 
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          onClick={() => fetchPlayerData(selectedDifficulty)}
+          onClick={() => selectedDifficulty && fetchPlayerData(selectedDifficulty)}
         >
           Try Again
         </button>

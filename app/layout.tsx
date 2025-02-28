@@ -1,7 +1,8 @@
 // app/layout.tsx
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Montserrat } from "next/font/google"
 import "@/app/styles/globals.css"
+import "@/app/styles/layout.css"
 import Script from "next/script"
 import { ClerkProvider } from "@clerk/nextjs"
 import Navbar from "@/app/components/ui/Navbar"
@@ -9,6 +10,14 @@ import Navbar from "@/app/components/ui/Navbar"
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+})
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+  display: "swap",
+  weight: ["600", "700", "800"],
 })
 
 export const metadata: Metadata = {
@@ -23,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning className={inter.className}>
+      <html lang="en" suppressHydrationWarning className={`${inter.variable} ${montserrat.variable}`}>
         <head>
           <meta name="next-head-count" content="0" />
           <meta name="react-hydration-warning" content="suppress" />
@@ -85,7 +94,7 @@ export default function RootLayout({
           />
         </head>
         <body
-          className={`${inter.variable} min-h-screen bg-background font-sans antialiased`}
+          className="min-h-screen bg-deep-slate font-inter antialiased"
           suppressHydrationWarning
         >
           <div className="relative flex min-h-screen flex-col">

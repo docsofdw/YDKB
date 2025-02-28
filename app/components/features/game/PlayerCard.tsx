@@ -9,13 +9,21 @@ import { RefreshCw, Trophy, XCircle, AlertTriangle } from 'lucide-react';
 import CollegeSearch from './CollegeSearch';
 import useGameState from '@/app/hooks/useGameState';
 import Image from 'next/image';
+import { Player } from '@/app/types/game';
+
+interface PlayerCardProps {
+  player: Player;
+  date?: string;
+  onComplete?: (difficulty: string, isCorrect: boolean, attempts: number) => void;
+  className?: string;
+}
 
 export default function PlayerCard({ 
   player, 
   date,
   onComplete,
   className = ""
-}) {
+}: PlayerCardProps) {
   const [activeTab, setActiveTab] = useState('guess');
   
   // Use the game state hook
@@ -39,7 +47,7 @@ export default function PlayerCard({
   // When the game completes, notify the parent component
   useEffect(() => {
     if (gameComplete && onComplete) {
-      onComplete(player.difficulty.toLowerCase(), correctGuess, attempts);
+      onComplete(player.difficulty?.toLowerCase() || 'easy', correctGuess, attempts);
     }
   }, [gameComplete, correctGuess, attempts, player, onComplete]);
   
@@ -51,8 +59,8 @@ export default function PlayerCard({
   }, [gameComplete]);
   
   // Handle a new guess
-  const handleGuess = (collegeName) => {
-    const result = makeGuess(collegeName, player.college);
+  const handleGuess = async (collegeName: string) => {
+    const result = await makeGuess(collegeName, player.college);
     
     if (result) {
       // If correct, show the result tab

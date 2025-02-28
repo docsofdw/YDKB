@@ -18,43 +18,43 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-deep-slate border-b border-midnight-navy sticky top-0 z-50">
+      <div className="max-w-[1200px] mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="text-xl font-bold text-indigo-600">
+            <div className="flex items-center">
+              <Link href="/" className="text-turf-green font-montserrat font-extrabold text-xl">
                 YDKB
               </Link>
             </div>
             {/* Desktop Navigation */}
-            <div className="hidden sm:ml-8 sm:flex sm:space-x-6">
+            <div className="hidden sm:flex ml-8 gap-6">
               <Link
                 href="/"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive("/")
-                    ? "border-indigo-500 text-gray-900"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                  isActive("/") 
+                    ? "border-turf-green text-chalk-white" 
+                    : "border-transparent text-silver-gray hover:text-chalk-white"
                 }`}
               >
                 Home
               </Link>
               <Link
                 href="/play"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive("/play")
-                    ? "border-indigo-500 text-gray-900"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                  isActive("/play") 
+                    ? "border-turf-green text-chalk-white" 
+                    : "border-transparent text-silver-gray hover:text-chalk-white"
                 }`}
               >
                 Play
               </Link>
               <Link
                 href="/leaderboard"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive("/leaderboard")
-                    ? "border-indigo-500 text-gray-900"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                  isActive("/leaderboard") 
+                    ? "border-turf-green text-chalk-white" 
+                    : "border-transparent text-silver-gray hover:text-chalk-white"
                 }`}
               >
                 Leaderboard
@@ -62,10 +62,10 @@ export default function Navbar() {
               <SignedIn>
                 <Link
                   href="/profile"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive("/profile")
-                      ? "border-indigo-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                    isActive("/profile") 
+                      ? "border-turf-green text-chalk-white" 
+                      : "border-transparent text-silver-gray hover:text-chalk-white"
                   }`}
                 >
                   Profile
@@ -75,10 +75,10 @@ export default function Navbar() {
           </div>
           
           {/* Desktop Auth Buttons */}
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          <div className="hidden sm:flex items-center ml-6">
             <SignedIn>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-500">Welcome back</span>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-silver-gray">Welcome back</span>
                 <UserButton 
                   afterSignOutUrl="/"
                   appearance={{
@@ -90,16 +90,16 @@ export default function Navbar() {
               </div>
             </SignedIn>
             <SignedOut>
-              <div className="flex space-x-3">
+              <div className="flex gap-3">
                 <Link
                   href="/login"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  className="text-silver-gray hover:text-chalk-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="bg-turf-green text-deep-slate px-3 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 hover:bg-turf-green/90"
                 >
                   Sign Up
                 </Link>
@@ -111,7 +111,7 @@ export default function Navbar() {
           <div className="flex items-center sm:hidden">
             <button
               onClick={toggleMobileMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-silver-gray hover:text-chalk-white transition-colors duration-150"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -154,13 +154,13 @@ export default function Navbar() {
 
       {/* Mobile menu, show/hide based on menu state */}
       <div className={`${mobileMenuOpen ? 'block' : 'hidden'} sm:hidden`}>
-        <div className="pt-2 pb-3 space-y-1">
+        <div className="pt-2 pb-3 flex flex-col gap-1">
           <Link
             href="/"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive("/")
-                ? "border-indigo-500 text-indigo-700 bg-indigo-50"
-                : "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 ${
+              isActive("/") 
+                ? "border-turf-green bg-midnight-navy text-chalk-white" 
+                : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
             }`}
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -168,10 +168,10 @@ export default function Navbar() {
           </Link>
           <Link
             href="/play"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive("/play")
-                ? "border-indigo-500 text-indigo-700 bg-indigo-50"
-                : "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 ${
+              isActive("/play") 
+                ? "border-turf-green bg-midnight-navy text-chalk-white" 
+                : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
             }`}
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -179,10 +179,10 @@ export default function Navbar() {
           </Link>
           <Link
             href="/leaderboard"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive("/leaderboard")
-                ? "border-indigo-500 text-indigo-700 bg-indigo-50"
-                : "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 ${
+              isActive("/leaderboard") 
+                ? "border-turf-green bg-midnight-navy text-chalk-white" 
+                : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
             }`}
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -191,50 +191,28 @@ export default function Navbar() {
           <SignedIn>
             <Link
               href="/profile"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive("/profile")
-                  ? "border-indigo-500 text-indigo-700 bg-indigo-50"
-                  : "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 ${
+                isActive("/profile") 
+                  ? "border-turf-green bg-midnight-navy text-chalk-white" 
+                  : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Profile
             </Link>
           </SignedIn>
-        </div>
-        
-        {/* Mobile auth buttons */}
-        <div className="pt-4 pb-3 border-t border-gray-200">
-          <SignedIn>
-            <div className="flex items-center px-4">
-              <div className="flex-shrink-0">
-                <UserButton 
-                  afterSignOutUrl="/"
-                  appearance={{
-                    elements: {
-                      avatarBox: "h-10 w-10"
-                    }
-                  }}
-                />
-              </div>
-              <div className="ml-3">
-                <div className="text-base font-medium text-gray-800">Your Account</div>
-                <div className="text-sm font-medium text-gray-500">Manage your profile</div>
-              </div>
-            </div>
-          </SignedIn>
           <SignedOut>
-            <div className="mt-3 space-y-1 px-2">
+            <div className="mt-4 flex flex-col gap-2 px-4">
               <Link
                 href="/login"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                className="w-full text-center text-silver-gray border border-silver-gray/30 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 hover:text-chalk-white"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
-                className="block px-3 py-2 rounded-md text-base font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+                className="w-full text-center bg-turf-green text-deep-slate px-3 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 hover:bg-turf-green/90"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Sign Up
