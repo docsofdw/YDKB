@@ -5,28 +5,17 @@ import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getUserStats, getUserGameHistory } from "@/app/lib/user-utils";
 
-// Function to fetch user stats from database (mock for now)
-async function getUserStats(userId: string) {
-  // In a real app, you would fetch this data from your database
-  // For now, we'll return mock data but pretend it's user-specific
+// Function to format game result
+function formatGameResult(game: any) {
+  const winRate = game.correct_answers / game.total_questions;
   return {
-    streak: 7,
-    totalGamesPlayed: 42,
-    winRate: 68,
-    lastActive: new Date(),
-    recentResults: [
-      { result: "win", date: "2023-06-01" },
-      { result: "win", date: "2023-06-02" },
-      { result: "loss", date: "2023-06-03" },
-      { result: "win", date: "2023-06-04" },
-      { result: "win", date: "2023-06-05" },
-    ],
-    achievements: [
-      { name: "First Win", description: "Win your first game", unlocked: true },
-      { name: "Streak Master", description: "Maintain a 5-day streak", unlocked: true },
-      { name: "Perfect Score", description: "Win a game without any wrong guesses", unlocked: false },
-    ]
+    result: winRate >= 0.7 ? 'win' : 'loss',
+    date: game.game_date,
+    score: game.score,
+    correctAnswers: game.correct_answers,
+    totalQuestions: game.total_questions
   };
 }
 
@@ -50,8 +39,17 @@ export default async function ProfilePage() {
     
     const user = await res.json();
 
-    // Fetch user-specific stats
-    const userStats = await getUserStats(userId);
+    // Fetch user-specific stats from Supabase
+    const userStats = await getUserStats() || {
+      total_games: 0,
+      win_rate: 0,
+      current_streak: 0,
+      last_played_at: new Date().toISOString()
+    };
+
+    // Fetch recent game history
+    const gameHistory = await getUserGameHistory(5) || [];
+    const recentResults = gameHistory.map(formatGameResult);
 
     // Format date for better display
     const memberSince = new Date(user.created_at).toLocaleDateString('en-US', {
@@ -60,6 +58,27 @@ export default async function ProfilePage() {
       day: 'numeric'
     });
 
+    // Define achievements based on stats
+    const achievements = [
+      { 
+        name: "First Win", 
+        description: "Win your first game", 
+        unlocked: userStats.total_games > 0 && userStats.win_rate > 0 
+      },
+      { 
+        name: "Streak Master", 
+        description: "Maintain a 5-day streak", 
+        unlocked: userStats.current_streak >= 5 
+      },
+      { 
+        name: "Perfect Score", 
+        description: "Win a game without any wrong guesses", 
+        unlocked: gameHistory.some(game => 
+          game.correct_answers === game.total_questions && game.total_questions > 0
+        ) 
+      },
+    ];
+
     return (
       <div className="container max-w-6xl mx-auto px-4 py-8">
         {/* Profile Header */}
@@ -67,11 +86,11 @@ export default async function ProfilePage() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="relative">
-                {user.imageUrl && (
+                {user.image_url && (
                   <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
                     <img 
-                      src={user.imageUrl} 
-                      alt={user.firstName || "User"} 
+                      src={user.image_url} 
+                      alt={user.first_name || "User"} 
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -82,13 +101,13 @@ export default async function ProfilePage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">
-                  {user.firstName} {user.lastName}
+                  {user.first_name} {user.last_name}
                 </h1>
-                <p className="text-muted-foreground">{user.emailAddresses[0]?.emailAddress}</p>
+                <p className="text-muted-foreground">{user.email_addresses[0]?.email_address}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="secondary" className="font-medium">Member since {memberSince}</Badge>
                   <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-                    {userStats.streak} Day Streak 🔥
+                    {userStats.current_streak} Day Streak 🔥
                   </Badge>
                 </div>
               </div>
@@ -106,7 +125,7 @@ export default async function ProfilePage() {
               <CardTitle className="text-lg font-medium text-gray-700">Games Played</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{userStats.totalGamesPlayed}</p>
+              <p className="text-4xl font-bold">{userStats.total_games}</p>
               <p className="text-sm text-muted-foreground">Across all difficulty levels</p>
             </CardContent>
           </Card>
@@ -116,7 +135,7 @@ export default async function ProfilePage() {
               <CardTitle className="text-lg font-medium text-gray-700">Win Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{userStats.winRate}%</p>
+              <p className="text-4xl font-bold">{userStats.win_rate?.toFixed(1)}%</p>
               <p className="text-sm text-muted-foreground">Keep improving!</p>
             </CardContent>
           </Card>
@@ -127,12 +146,15 @@ export default async function ProfilePage() {
             </CardHeader>
             <CardContent>
               <p className="text-xl font-medium">
-                {new Date().toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+                {userStats.last_played_at 
+                  ? new Date(userStats.last_played_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  : 'Never played'
+                }
               </p>
               <p className="text-sm text-muted-foreground">Come back daily for streaks!</p>
             </CardContent>
@@ -147,25 +169,37 @@ export default async function ProfilePage() {
               <CardDescription>Your latest game results</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {userStats.recentResults.map((game, index) => (
-                  <div key={index} className="flex items-center justify-between border-b pb-3 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${game.result === 'win' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="font-medium">{game.result === 'win' ? 'Victory' : 'Defeat'}</span>
+              {recentResults.length > 0 ? (
+                <div className="space-y-4">
+                  {recentResults.map((game, index) => (
+                    <div key={index} className="flex items-center justify-between border-b pb-3 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${game.result === 'win' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="font-medium">{game.result === 'win' ? 'Victory' : 'Defeat'}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {game.correctAnswers}/{game.totalQuestions} correct
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(game.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(game.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <p>No games played yet</p>
+                  <p className="text-sm mt-2">Play your first game to see results here</p>
+                </div>
+              )}
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">View All History</Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/history">View All History</Link>
+              </Button>
             </CardFooter>
           </Card>
 
@@ -176,7 +210,7 @@ export default async function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {userStats.achievements.map((achievement, index) => (
+                {achievements.map((achievement, index) => (
                   <div key={index} className="flex items-center gap-3 border-b pb-3 last:border-0">
                     <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                       achievement.unlocked 
@@ -194,30 +228,23 @@ export default async function ProfilePage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">View All Achievements</Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/achievements">View All Achievements</Link>
+              </Button>
             </CardFooter>
           </Card>
         </div>
       </div>
     );
   } catch (error) {
-    console.error("Error in profile page:", error);
+    console.error('Error in profile page:', error);
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Something went wrong</CardTitle>
-            <CardDescription>We couldn't load your profile information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground">Please try again later or contact support if the issue persists.</p>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button asChild>
-              <Link href="/">Return Home</Link>
-            </Button>
-          </CardFooter>
-        </Card>
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Error Loading Profile</h1>
+        <p className="mb-6">There was an error loading your profile information.</p>
+        <Button asChild>
+          <Link href="/">Return Home</Link>
+        </Button>
       </div>
     );
   }

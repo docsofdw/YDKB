@@ -1,8 +1,10 @@
 export default function Head() {
   return (
     <>
-      <title>YDKB | Today's Challenge</title>
-      <meta name="description" content="Test your knowledge of NFL players' college careers" />
+      <title>YDKB | College Challenge</title>
+      <meta name="description" content="Test your knowledge of NFL players' college careers in this sleek, minimal tech-inspired game" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta name="theme-color" content="#121620" />
       <script
         dangerouslySetInnerHTML={{
           __html: `

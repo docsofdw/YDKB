@@ -1,68 +1,80 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+
+// Create a Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    // Test connection to Supabase
+    const startTime = Date.now();
     
-    // Test query to verify connection and check data
-    const { data: playersData, error: playersError, count: playersCount } = await supabase
-      .from('players')
-      .select('*', { count: 'exact' })
-      .limit(5);
-      
-    if (playersError) {
-      return NextResponse.json({
-        success: false,
-        error: playersError.message,
-        details: 'Failed to query players table'
-      }, { status: 500 });
-    }
-    
-    // Check for colleges table
-    const { data: collegesData, error: collegesError, count: collegesCount } = await supabase
-      .from('colleges')
-      .select('*', { count: 'exact' })
-      .limit(5);
-      
-    // Check for daily_challenges table
-    const { data: challengesData, error: challengesError } = await supabase
-      .from('daily_challenges')
-      .select('*')
-      .limit(1);
-    
-    return NextResponse.json({
-      success: true,
-      connection: "Successful",
-      tables: {
-        players: {
-          exists: !playersError,
-          count: playersCount || 0,
-          sample: playersData || []
-        },
-        colleges: {
-          exists: !collegesError,
-          count: collegesCount || 0,
-          sample: collegesData || []
-        },
-        dailyChallenges: {
-          exists: !challengesError,
-          sample: challengesData || []
-        }
-      },
-      env: {
-        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? "Defined" : "Missing",
-        supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Defined" : "Missing"
-      }
+    // Check if we can connect to Supabase
+    const { data: connectionTest, error: connectionError } = await supabase.from('_test_connection').select('*').limit(1).catch(err => {
+      return { data: null, error: err };
     });
     
+    // Check if colleges table exists
+    const { data: colleges, error: collegesError } = await supabase.from('colleges').select('id').limit(1).catch(err => {
+      return { data: null, error: err };
+    });
+    
+    // Check if players table exists
+    const { data: players, error: playersError } = await supabase.from('players').select('id').limit(1).catch(err => {
+      return { data: null, error: err };
+    });
+    
+    // Check if daily_challenges table exists
+    const { data: challenges, error: challengesError } = await supabase.from('daily_challenges').select('id').limit(1).catch(err => {
+      return { data: null, error: err };
+    });
+    
+    const responseTime = Date.now() - startTime;
+    
+    // Build response
+    const response = {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      response_time_ms: responseTime,
+      connection: {
+        success: !connectionError,
+        error: connectionError ? connectionError.message : null
+      },
+      tables: {
+        colleges: {
+          exists: !collegesError,
+          count: colleges ? colleges.length : 0,
+          error: collegesError ? collegesError.message : null
+        },
+        players: {
+          exists: !playersError,
+          count: players ? players.length : 0,
+          error: playersError ? playersError.message : null
+        },
+        daily_challenges: {
+          exists: !challengesError,
+          count: challenges ? challenges.length : 0,
+          error: challengesError ? challengesError.message : null
+        }
+      }
+    };
+    
+    return NextResponse.json(response);
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-      details: 'Error testing Supabase connection'
-    }, { status: 500 });
+    console.error('API error:', error);
+    
+    return NextResponse.json(
+      { 
+        status: 'error',
+        error: error.message || 'An error occurred',
+        timestamp: new Date().toISOString(),
+        supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL
+      },
+      { status: 500 }
+    );
   }
 } 
