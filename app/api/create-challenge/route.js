@@ -2,10 +2,39 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+// Create a Supabase client with proper headers
+function createClient() {
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ 
+    cookies: () => cookieStore,
+    options: {
+      global: {
+        headers: {
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      },
+    },
+  });
+  return supabase;
+}
+
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    // Set CORS headers
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Content-Type': 'application/json',
+    };
+    
+    // Handle OPTIONS request for CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers });
+    }
+    
+    const supabase = createClient();
     
     // Get date from query parameter or use today
     const { searchParams } = new URL(request.url);
@@ -24,7 +53,7 @@ export async function GET(request) {
         success: false,
         message: 'Challenge already exists for this date',
         challenge: existingChallenge
-      });
+      }, { headers });
     }
     
     // Get random players for each difficulty
@@ -39,7 +68,7 @@ export async function GET(request) {
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch Easy players: ' + (easyError?.message || 'No players found')
-      }, { status: 500 });
+      }, { status: 500, headers });
     }
     
     // Select a random player from the results
@@ -57,7 +86,7 @@ export async function GET(request) {
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch Hard players: ' + (hardError?.message || 'No players found')
-      }, { status: 500 });
+      }, { status: 500, headers });
     }
     
     // Select a random player from the results
@@ -94,7 +123,7 @@ export async function GET(request) {
       return NextResponse.json({
         success: false,
         error: 'Failed to create challenge: ' + createError.message
-      }, { status: 500 });
+      }, { status: 500, headers });
     }
     
     // Fetch the full player details to return
@@ -108,7 +137,7 @@ export async function GET(request) {
         success: true,
         message: 'Challenge created but failed to fetch player details',
         challenge: newChallenge
-      });
+      }, { headers });
     }
     
     // Map player details
@@ -125,7 +154,7 @@ export async function GET(request) {
         hard: hardDetails,
         hof: hofDetails
       }
-    });
+    }, { headers });
     
   } catch (error) {
     console.error('API error:', error);
@@ -133,6 +162,14 @@ export async function GET(request) {
     return NextResponse.json({
       success: false,
       error: error.message || 'An error occurred'
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Content-Type': 'application/json',
+      }
+    });
   }
 } 

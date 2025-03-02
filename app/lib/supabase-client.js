@@ -29,7 +29,7 @@ export function createSafeClient() {
     
     // Add custom headers to prevent 406 errors
     if (supabase.rest && supabase.rest.headers) {
-      supabase.rest.headers['Accept'] = 'application/json';
+      supabase.rest.headers['Accept'] = '*/*';
       supabase.rest.headers['Content-Type'] = 'application/json';
     }
     
@@ -41,11 +41,30 @@ export function createSafeClient() {
         if (args[1] && typeof args[1] === 'object') {
           args[1].headers = {
             ...args[1].headers,
-            'Accept': 'application/json',
+            'Accept': '*/*',
             'Content-Type': 'application/json'
           };
         }
         return originalFetch.apply(this, args);
+      };
+    }
+    
+    // Patch the supabase client to add headers to all requests
+    if (supabase.supabaseUrl && typeof supabase.supabaseUrl === 'string') {
+      const originalFetch = global.fetch;
+      const supabaseUrl = supabase.supabaseUrl;
+      
+      // Override fetch for Supabase requests only
+      global.fetch = function(url, options) {
+        if (typeof url === 'string' && url.includes(supabaseUrl)) {
+          options = options || {};
+          options.headers = {
+            ...options.headers,
+            'Accept': '*/*',
+            'Content-Type': 'application/json'
+          };
+        }
+        return originalFetch(url, options);
       };
     }
     

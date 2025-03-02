@@ -3,6 +3,26 @@ import { cookies } from 'next/headers';
 import { auth } from '@clerk/nextjs/server';
 
 /**
+ * Create a Supabase client with proper headers to prevent 406 errors
+ * @returns Supabase client
+ */
+function createClient() {
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ 
+    cookies: () => cookieStore,
+    options: {
+      global: {
+        headers: {
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      },
+    },
+  });
+  return supabase;
+}
+
+/**
  * Get the Supabase user ID from a Clerk user ID
  * @returns The Supabase user ID or null if not found
  */
@@ -16,8 +36,7 @@ export async function getSupabaseUserId() {
     }
     
     // Initialize Supabase client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
     // Query the users table to get the Supabase user ID
     const { data, error } = await supabase
@@ -58,8 +77,7 @@ export async function saveUserGameHistory(gameData: {
     }
     
     // Initialize Supabase client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
     // Insert game history
     const { data, error } = await supabase
@@ -107,8 +125,7 @@ export async function saveUserQuestionHistory(
     }
     
     // Initialize Supabase client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
     // Prepare data for insertion
     const questionsToInsert = questionData.map(question => ({
@@ -149,8 +166,7 @@ async function updateUserStats(
 ) {
   try {
     // Initialize Supabase client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
     // Get current user stats
     const { data: currentStats, error: fetchError } = await supabase
@@ -225,8 +241,7 @@ export async function getUserStats() {
     }
     
     // Initialize Supabase client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
     // Get user stats
     const { data, error } = await supabase
@@ -261,8 +276,7 @@ export async function getUserGameHistory(limit = 10) {
     }
     
     // Initialize Supabase client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
     // Get game history
     const { data, error } = await supabase

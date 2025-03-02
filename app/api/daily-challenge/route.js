@@ -1,14 +1,35 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-// Create a Supabase client
+// Create a Supabase client with proper headers
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    global: {
+      headers: {
+        Accept: '*/*',
+        'Content-Type': 'application/json',
+      },
+    },
+  }
 );
 
 export async function GET(request) {
   try {
+    // Set CORS headers
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Content-Type': 'application/json',
+    };
+    
+    // Handle OPTIONS request for CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers });
+    }
+    
     // Get date parameter or use today
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
@@ -26,7 +47,7 @@ export async function GET(request) {
     if (challengeError) {
       return NextResponse.json(
         { error: 'No challenge found for this date' },
-        { status: 404 }
+        { status: 404, headers }
       );
     }
     
@@ -39,7 +60,7 @@ export async function GET(request) {
     if (playersError) {
       return NextResponse.json(
         { error: 'Error loading player data' },
-        { status: 500 }
+        { status: 500, headers }
       );
     }
     
@@ -55,7 +76,7 @@ export async function GET(request) {
     if (!playerMap.easy || !playerMap.hard || !playerMap.hof) {
       return NextResponse.json(
         { error: 'Missing player data for challenge' },
-        { status: 500 }
+        { status: 500, headers }
       );
     }
     
@@ -85,14 +106,22 @@ export async function GET(request) {
       correctOption: correctIndex
     };
     
-    return NextResponse.json(response);
+    return NextResponse.json(response, { headers });
     
   } catch (error) {
     console.error('API error:', error);
     
     return NextResponse.json(
       { error: error.message || 'An error occurred' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Content-Type': 'application/json',
+        }
+      }
     );
   }
 } 

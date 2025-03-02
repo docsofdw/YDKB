@@ -18,20 +18,20 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-deep-slate border-b border-midnight-navy sticky top-0 z-50">
-      <div className="max-w-[1200px] mx-auto px-4">
-        <div className="flex justify-between h-16">
-          <div className="flex">
+    <nav className="bg-deep-slate border-b border-midnight-navy sticky top-0 z-50 shadow-md">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="flex justify-between h-20">
+          <div className="flex items-center">
             <div className="flex items-center">
-              <Link href="/" className="text-turf-green font-montserrat font-extrabold text-xl">
+              <Link href="/" className="text-turf-green font-montserrat font-extrabold text-2xl">
                 YDKB
               </Link>
             </div>
             {/* Desktop Navigation */}
-            <div className="hidden sm:flex ml-8 gap-6">
+            <div className="hidden sm:flex ml-12 gap-8">
               <Link
                 href="/"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                className={`inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
                   isActive("/") 
                     ? "border-turf-green text-chalk-white" 
                     : "border-transparent text-silver-gray hover:text-chalk-white"
@@ -41,7 +41,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/play"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                className={`inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
                   isActive("/play") 
                     ? "border-turf-green text-chalk-white" 
                     : "border-transparent text-silver-gray hover:text-chalk-white"
@@ -51,7 +51,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/leaderboard"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                className={`inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
                   isActive("/leaderboard") 
                     ? "border-turf-green text-chalk-white" 
                     : "border-transparent text-silver-gray hover:text-chalk-white"
@@ -62,7 +62,7 @@ export default function Navbar() {
               <SignedIn>
                 <Link
                   href="/profile"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                  className={`inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
                     isActive("/profile") 
                       ? "border-turf-green text-chalk-white" 
                       : "border-transparent text-silver-gray hover:text-chalk-white"
@@ -75,7 +75,7 @@ export default function Navbar() {
           </div>
           
           {/* Desktop Auth Buttons */}
-          <div className="hidden sm:flex items-center ml-6">
+          <div className="hidden sm:flex items-center">
             <SignedIn>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-silver-gray">Welcome back</span>
@@ -83,23 +83,23 @@ export default function Navbar() {
                   afterSignOutUrl="/"
                   appearance={{
                     elements: {
-                      avatarBox: "h-8 w-8"
+                      avatarBox: "h-9 w-9"
                     }
                   }}
                 />
               </div>
             </SignedIn>
             <SignedOut>
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <Link
                   href="/login"
-                  className="text-silver-gray hover:text-chalk-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150"
+                  className="text-silver-gray hover:text-chalk-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-turf-green text-deep-slate px-3 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 hover:bg-turf-green/90"
+                  className="bg-turf-green text-deep-slate px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 hover:bg-turf-green/90"
                 >
                   Sign Up
                 </Link>
@@ -202,7 +202,7 @@ export default function Navbar() {
             </Link>
           </SignedIn>
           <SignedOut>
-            <div className="mt-4 flex flex-col gap-2 px-4">
+            <div className="mt-4 flex flex-col gap-2 px-4 pb-4">
               <Link
                 href="/login"
                 className="w-full text-center text-silver-gray border border-silver-gray/30 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 hover:text-chalk-white"

@@ -1,25 +1,38 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
+  // Set CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json',
+  };
+  
+  // Handle OPTIONS request for CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers });
+  }
+  
   try {
     const { guess, answer } = await request.json();
     
     if (!guess || !answer) {
       return NextResponse.json(
         { error: 'Missing guess or answer' },
-        { status: 400 }
+        { status: 400, headers }
       );
     }
     
     // Generate a hint based on the guess and correct answer
     const hint = generateHint(guess, answer);
     
-    return NextResponse.json({ hint });
+    return NextResponse.json({ hint }, { headers });
   } catch (error) {
     console.error('Error generating hint:', error);
     return NextResponse.json(
       { error: 'Failed to generate hint' },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
 }

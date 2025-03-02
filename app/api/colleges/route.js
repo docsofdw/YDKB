@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
+// Create a Supabase client with proper headers
+function createClient() {
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ 
+    cookies: () => cookieStore,
+    options: {
+      global: {
+        headers: {
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      },
+    },
+  });
+  return supabase;
+}
+
 // Fallback data in case the database query fails
 const fallbackCollegeData = [
   { id: 1, name: 'Harvard University' },
@@ -18,17 +35,29 @@ const fallbackCollegeData = [
 ];
 
 export async function GET(request) {
+  // Set CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json',
+  };
+  
+  // Handle OPTIONS request for CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers });
+  }
+  
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') || '';
   
   if (!search || search.length < 3) {
-    return NextResponse.json([]);
+    return NextResponse.json([], { headers });
   }
   
   try {
     // Create a Supabase client
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createClient();
     
     // Query the colleges table
     const { data, error } = await supabase
@@ -44,10 +73,10 @@ export async function GET(request) {
       const filteredFallbackData = fallbackCollegeData.filter(college => 
         college.name.toLowerCase().includes(search.toLowerCase())
       );
-      return NextResponse.json(filteredFallbackData.slice(0, 10));
+      return NextResponse.json(filteredFallbackData.slice(0, 10), { headers });
     }
     
-    return NextResponse.json(data);
+    return NextResponse.json(data, { headers });
   } catch (error) {
     console.error('Error in colleges API route:', error);
     
@@ -56,6 +85,6 @@ export async function GET(request) {
       college.name.toLowerCase().includes(search.toLowerCase())
     );
     
-    return NextResponse.json(filteredFallbackData.slice(0, 10));
+    return NextResponse.json(filteredFallbackData.slice(0, 10), { headers });
   }
 }

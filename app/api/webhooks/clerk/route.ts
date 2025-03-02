@@ -5,7 +5,37 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+// Create a Supabase client with proper headers
+function createClient() {
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ 
+    cookies: () => cookieStore,
+    options: {
+      global: {
+        headers: {
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      },
+    },
+  });
+  return supabase;
+}
+
 export async function POST(req: Request) {
+  // Set CORS headers
+  const responseHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Content-Type': 'application/json',
+  };
+  
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: responseHeaders });
+  }
+  
   // Get the headers
   const headerPayload = headers();
   const svix_id = headerPayload.get('svix-id');
@@ -15,7 +45,8 @@ export async function POST(req: Request) {
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
     return new Response('Error: Missing svix headers', {
-      status: 400
+      status: 400,
+      headers: responseHeaders
     });
   }
 
@@ -38,7 +69,8 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('Error verifying webhook:', err);
     return new Response('Error verifying webhook', {
-      status: 400
+      status: 400,
+      headers: responseHeaders
     });
   }
 
@@ -46,8 +78,7 @@ export async function POST(req: Request) {
   const eventType = evt.type;
 
   // Initialize Supabase client
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  const supabase = createClient();
 
   // Handle the different event types
   try {
@@ -69,7 +100,7 @@ export async function POST(req: Request) {
 
         if (error) {
           console.error('Error inserting user into Supabase:', error);
-          return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+          return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: responseHeaders });
         }
 
         // Initialize user stats
@@ -78,7 +109,7 @@ export async function POST(req: Request) {
           .from('user_stats')
           .insert([{ user_id: userId }]);
 
-        return NextResponse.json({ success: true, message: 'User created in Supabase' });
+        return NextResponse.json({ success: true, message: 'User created in Supabase' }, { headers: responseHeaders });
       }
 
       case 'user.updated': {
@@ -96,16 +127,16 @@ export async function POST(req: Request) {
 
         if (error) {
           console.error('Error updating user in Supabase:', error);
-          return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+          return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: responseHeaders });
         }
 
-        return NextResponse.json({ success: true, message: 'User updated in Supabase' });
+        return NextResponse.json({ success: true, message: 'User updated in Supabase' }, { headers: responseHeaders });
       }
 
       case 'user.deleted': {
         const { id } = evt.data;
 
-        // Get the Supabase user ID first
+        // Get the Supabase user ID
         const { data: userData, error: fetchError } = await supabase
           .from('users')
           .select('id')
@@ -114,33 +145,39 @@ export async function POST(req: Request) {
 
         if (fetchError) {
           console.error('Error fetching user from Supabase:', fetchError);
-          return NextResponse.json({ success: false, error: fetchError.message }, { status: 500 });
+          return NextResponse.json({ success: false, error: fetchError.message }, { status: 500, headers: responseHeaders });
         }
 
-        // Delete the user from your Supabase users table
-        // The cascading delete will handle related records
-        const { error } = await supabase
+        // Delete user stats first (foreign key constraint)
+        if (userData) {
+          await supabase
+            .from('user_stats')
+            .delete()
+            .eq('user_id', userData.id);
+        }
+
+        // Delete the user
+        const { error: deleteError } = await supabase
           .from('users')
           .delete()
           .eq('clerk_id', id);
 
-        if (error) {
-          console.error('Error deleting user from Supabase:', error);
-          return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        if (deleteError) {
+          console.error('Error deleting user from Supabase:', deleteError);
+          return NextResponse.json({ success: false, error: deleteError.message }, { status: 500, headers: responseHeaders });
         }
 
-        return NextResponse.json({ success: true, message: 'User deleted from Supabase' });
+        return NextResponse.json({ success: true, message: 'User deleted from Supabase' }, { headers: responseHeaders });
       }
 
       default:
-        // Handle other event types or ignore them
-        return NextResponse.json({ success: true, message: `Webhook received: ${eventType}` });
+        return NextResponse.json({ success: true, message: 'Webhook received' }, { headers: responseHeaders });
     }
   } catch (error) {
     console.error('Error processing webhook:', error);
     return NextResponse.json(
-      { success: false, error: 'Error processing webhook' },
-      { status: 500 }
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500, headers: responseHeaders }
     );
   }
 } 

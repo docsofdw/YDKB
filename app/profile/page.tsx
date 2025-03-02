@@ -120,32 +120,32 @@ export default async function ProfilePage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-white to-gray-50 shadow-md border-0">
+          <Card className="bg-midnight-navy shadow-md border-0">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium text-gray-700">Games Played</CardTitle>
+              <CardTitle className="text-lg font-medium text-chalk-white">Games Played</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{userStats.total_games}</p>
-              <p className="text-sm text-muted-foreground">Across all difficulty levels</p>
+              <p className="text-4xl font-bold text-chalk-white">{userStats.total_games}</p>
+              <p className="text-sm text-silver-gray">Across all difficulty levels</p>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-white to-gray-50 shadow-md border-0">
+          <Card className="bg-midnight-navy shadow-md border-0">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium text-gray-700">Win Rate</CardTitle>
+              <CardTitle className="text-lg font-medium text-chalk-white">Win Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{userStats.win_rate?.toFixed(1)}%</p>
-              <p className="text-sm text-muted-foreground">Keep improving!</p>
+              <p className="text-4xl font-bold text-chalk-white">{userStats.win_rate?.toFixed(1)}%</p>
+              <p className="text-sm text-silver-gray">Keep improving!</p>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-white to-gray-50 shadow-md border-0">
+          <Card className="bg-midnight-navy shadow-md border-0">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium text-gray-700">Last Active</CardTitle>
+              <CardTitle className="text-lg font-medium text-chalk-white">Last Active</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-xl font-medium">
+              <p className="text-xl font-medium text-chalk-white">
                 {userStats.last_played_at 
                   ? new Date(userStats.last_played_at).toLocaleDateString('en-US', {
                       month: 'short',
@@ -156,31 +156,31 @@ export default async function ProfilePage() {
                   : 'Never played'
                 }
               </p>
-              <p className="text-sm text-muted-foreground">Come back daily for streaks!</p>
+              <p className="text-sm text-silver-gray">Come back daily for streaks!</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Recent Activity & Achievements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="shadow-md border-0">
+          <Card className="bg-midnight-navy shadow-md border-0">
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Your latest game results</CardDescription>
+              <CardTitle className="text-chalk-white">Recent Activity</CardTitle>
+              <CardDescription className="text-silver-gray">Your latest game results</CardDescription>
             </CardHeader>
             <CardContent>
               {recentResults.length > 0 ? (
                 <div className="space-y-4">
                   {recentResults.map((game, index) => (
-                    <div key={index} className="flex items-center justify-between border-b pb-3 last:border-0">
+                    <div key={index} className="flex items-center justify-between border-b border-gray-700 pb-3 last:border-0">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${game.result === 'win' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                        <span className="font-medium">{game.result === 'win' ? 'Victory' : 'Defeat'}</span>
-                        <span className="text-sm text-muted-foreground">
+                        <div className={`w-3 h-3 rounded-full ${game.result === 'win' ? 'bg-victory-green' : 'bg-penalty-red'}`}></div>
+                        <span className="font-medium text-chalk-white">{game.result === 'win' ? 'Victory' : 'Defeat'}</span>
+                        <span className="text-sm text-silver-gray">
                           {game.correctAnswers}/{game.totalQuestions} correct
                         </span>
                       </div>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-silver-gray">
                         {new Date(game.date).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric'
@@ -190,45 +190,45 @@ export default async function ProfilePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6 text-muted-foreground">
+                <div className="text-center py-6 text-silver-gray">
                   <p>No games played yet</p>
                   <p className="text-sm mt-2">Play your first game to see results here</p>
                 </div>
               )}
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full" asChild>
+              <Button variant="outline" className="w-full text-chalk-white border-gray-700 hover:bg-gray-800" asChild>
                 <Link href="/history">View All History</Link>
               </Button>
             </CardFooter>
           </Card>
 
-          <Card className="shadow-md border-0">
+          <Card className="bg-midnight-navy shadow-md border-0">
             <CardHeader>
-              <CardTitle>Achievements</CardTitle>
-              <CardDescription>Milestones you've reached</CardDescription>
+              <CardTitle className="text-chalk-white">Achievements</CardTitle>
+              <CardDescription className="text-silver-gray">Milestones you've reached</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {achievements.map((achievement, index) => (
-                  <div key={index} className="flex items-center gap-3 border-b pb-3 last:border-0">
+                  <div key={index} className="flex items-center gap-3 border-b border-gray-700 pb-3 last:border-0">
                     <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
                       achievement.unlocked 
-                        ? 'bg-gradient-to-r from-amber-300 to-amber-500 text-white' 
-                        : 'bg-gray-200 text-gray-400'
+                        ? 'bg-gradient-to-r from-amber-300 to-amber-500 text-deep-slate' 
+                        : 'bg-gray-700 text-silver-gray'
                     }`}>
                       {achievement.unlocked ? '🏆' : '🔒'}
                     </div>
                     <div>
-                      <p className="font-medium">{achievement.name}</p>
-                      <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                      <p className="font-medium text-chalk-white">{achievement.name}</p>
+                      <p className="text-sm text-silver-gray">{achievement.description}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full" asChild>
+              <Button variant="outline" className="w-full text-chalk-white border-gray-700 hover:bg-gray-800" asChild>
                 <Link href="/achievements">View All Achievements</Link>
               </Button>
             </CardFooter>
