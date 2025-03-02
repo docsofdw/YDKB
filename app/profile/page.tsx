@@ -5,7 +5,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getUserStats, getUserGameHistory } from "@/app/lib/user-utils";
+import { getUserStats, getUserGameHistory } from "@/app/lib/user-actions";
 
 // Function to format game result
 function formatGameResult(game: any) {

@@ -2,9 +2,9 @@
 'use client';
 
 import { GameLeaderboard, Player } from "@/app/components/common/ui/game-leaderboard";
-import { useAuth } from "@clerk/nextjs";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 
 // Sample player data for "You Don't Know Ball" game
 const samplePlayers: Player[] = [
@@ -111,33 +111,29 @@ const samplePlayers: Player[] = [
 ];
 
 export default function LeaderboardPage() {
-  const { isLoaded, userId } = useAuth();
-  const router = useRouter();
-  
-  useEffect(() => {
-    if (isLoaded && !userId) {
-      router.push('/login');
-    }
-  }, [isLoaded, userId, router]);
-
-  // Don't render anything until auth is loaded
-  if (!isLoaded || !userId) {
-    return (
-      <div className="container mx-auto py-8 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading leaderboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-center mb-8">Leaderboard</h1>
-      <div className="max-w-4xl mx-auto">
-        <GameLeaderboard players={samplePlayers} />
-      </div>
+      <SignedIn>
+        <h1 className="text-3xl font-bold text-center mb-8">Leaderboard</h1>
+        <div className="max-w-4xl mx-auto">
+          <GameLeaderboard players={samplePlayers} />
+        </div>
+      </SignedIn>
+      
+      <SignedOut>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center p-8 max-w-md mx-auto">
+            <h1 className="text-2xl font-bold mb-4">Sign In Required</h1>
+            <p className="mb-6">Please sign in to view the leaderboard.</p>
+            <Link
+              href="/login"
+              className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </SignedOut>
     </div>
   );
 }

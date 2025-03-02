@@ -17,13 +17,20 @@ export default function Navbar() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
     <nav className="bg-deep-slate border-b border-midnight-navy sticky top-0 z-50 shadow-md">
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <div className="flex items-center">
-              <Link href="/" className="text-turf-green font-montserrat font-extrabold text-2xl">
+              <Link 
+                href="/" 
+                className="text-turf-green font-montserrat font-extrabold text-2xl"
+              >
                 YDKB
               </Link>
             </div>
@@ -60,6 +67,16 @@ export default function Navbar() {
                 Leaderboard
               </Link>
               <SignedIn>
+                <Link
+                  href="/friends"
+                  className={`inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
+                    isActive("/friends") 
+                      ? "border-turf-green text-chalk-white" 
+                      : "border-transparent text-silver-gray hover:text-chalk-white"
+                  }`}
+                >
+                  Friends
+                </Link>
                 <Link
                   href="/profile"
                   className={`inline-flex items-center px-2 pt-1 border-b-2 text-sm font-medium transition-colors duration-150 ${
@@ -162,7 +179,7 @@ export default function Navbar() {
                 ? "border-turf-green bg-midnight-navy text-chalk-white" 
                 : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
             }`}
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={closeMobileMenu}
           >
             Home
           </Link>
@@ -173,7 +190,7 @@ export default function Navbar() {
                 ? "border-turf-green bg-midnight-navy text-chalk-white" 
                 : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
             }`}
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={closeMobileMenu}
           >
             Play
           </Link>
@@ -184,11 +201,23 @@ export default function Navbar() {
                 ? "border-turf-green bg-midnight-navy text-chalk-white" 
                 : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
             }`}
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={closeMobileMenu}
           >
             Leaderboard
           </Link>
+          
           <SignedIn>
+            <Link
+              href="/friends"
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 ${
+                isActive("/friends") 
+                  ? "border-turf-green bg-midnight-navy text-chalk-white" 
+                  : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
+              }`}
+              onClick={closeMobileMenu}
+            >
+              Friends
+            </Link>
             <Link
               href="/profile"
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 ${
@@ -196,28 +225,27 @@ export default function Navbar() {
                   ? "border-turf-green bg-midnight-navy text-chalk-white" 
                   : "border-transparent text-silver-gray hover:bg-midnight-navy/50"
               }`}
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
             >
               Profile
             </Link>
           </SignedIn>
+          
           <SignedOut>
-            <div className="mt-4 flex flex-col gap-2 px-4 pb-4">
-              <Link
-                href="/login"
-                className="w-full text-center text-silver-gray border border-silver-gray/30 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 hover:text-chalk-white"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/signup"
-                className="w-full text-center bg-turf-green text-deep-slate px-3 py-2 rounded-lg text-sm font-semibold transition-colors duration-150 hover:bg-turf-green/90"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign Up
-              </Link>
-            </div>
+            <Link
+              href="/login"
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 border-transparent text-silver-gray hover:bg-midnight-navy/50`}
+              onClick={closeMobileMenu}
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/signup"
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors duration-150 border-transparent text-silver-gray hover:bg-midnight-navy/50`}
+              onClick={closeMobileMenu}
+            >
+              Sign Up
+            </Link>
           </SignedOut>
         </div>
       </div>

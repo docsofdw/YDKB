@@ -1,3 +1,14 @@
+/**
+ * DEPRECATED: This file contains server-side code that should not be used in client components.
+ * 
+ * For server-side operations, use user-actions.ts instead.
+ * For client-side operations, use user-utils-client.ts instead.
+ * For Supabase client operations, use supabase-client.ts instead.
+ */
+
+// This file is kept for backward compatibility but should not be used in new code.
+// It will be removed in a future update.
+
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { auth } from '@clerk/nextjs/server';
@@ -296,4 +307,360 @@ export async function getUserGameHistory(limit = 10) {
     console.error('Error in getUserGameHistory:', error);
     return null;
   }
-} 
+}
+
+/**
+ * Send a friend request to another user
+ * @param friendId The ID of the user to send a friend request to
+ * @returns Object with success status and message
+ */
+export async function sendFriendRequest(friendId: string) {
+  try {
+    const userId = await getSupabaseUserId();
+    
+    if (!userId) {
+      return { success: false, message: 'User not authenticated' };
+    }
+    
+    if (userId === friendId) {
+      return { success: false, message: 'Cannot send friend request to yourself' };
+    }
+    
+    const supabase = createClient();
+    
+    // Check if a relationship already exists
+    const { data: existingRelationship, error: checkError } = await supabase
+      .from('friend_relationships')
+      .select('*')
+      .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+      .or(`user_id.eq.${friendId},friend_id.eq.${friendId}`)
+      .single();
+      
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned" which is expected
+      console.error('Error checking existing relationship:', checkError);
+      return { success: false, message: 'Error checking existing relationship' };
+    }
+    
+    if (existingRelationship) {
+      return { 
+        success: false, 
+        message: `A relationship already exists with status: ${existingRelationship.status}` 
+      };
+    }
+    
+    // Create the friend request
+    const { error } = await supabase
+      .from('friend_relationships')
+      .insert({
+        user_id: userId,
+        friend_id: friendId,
+        status: 'pending'
+      });
+      
+    if (error) {
+      console.error('Error sending friend request:', error);
+      return { success: false, message: 'Error sending friend request' };
+    }
+    
+    return { success: true, message: 'Friend request sent successfully' };
+  } catch (error) {
+    console.error('Error in sendFriendRequest:', error);
+    return { success: false, message: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Respond to a friend request
+ * @param requestId The ID of the friend request
+ * @param accept Whether to accept or reject the request
+ * @returns Object with success status and message
+ */
+export async function respondToFriendRequest(requestId: string, accept: boolean) {
+  try {
+    const userId = await getSupabaseUserId();
+    
+    if (!userId) {
+      return { success: false, message: 'User not authenticated' };
+    }
+    
+    const supabase = createClient();
+    
+    // Get the friend request
+    const { data: friendRequest, error: getError } = await supabase
+      .from('friend_relationships')
+      .select('*')
+      .eq('id', requestId)
+      .eq('friend_id', userId) // Ensure the request is directed to the current user
+      .eq('status', 'pending')
+      .single();
+      
+    if (getError || !friendRequest) {
+      console.error('Error getting friend request:', getError);
+      return { success: false, message: 'Friend request not found' };
+    }
+    
+    // Update the request status
+    const newStatus = accept ? 'accepted' : 'rejected';
+    const { error: updateError } = await supabase
+      .from('friend_relationships')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', requestId);
+      
+    if (updateError) {
+      console.error('Error updating friend request:', updateError);
+      return { success: false, message: 'Error updating friend request' };
+    }
+    
+    return { 
+      success: true, 
+      message: accept ? 'Friend request accepted' : 'Friend request rejected' 
+    };
+  } catch (error) {
+    console.error('Error in respondToFriendRequest:', error);
+    return { success: false, message: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Get a list of the user's friends
+ * @returns Array of friends with their basic info
+ */
+export async function getFriends() {
+  try {
+    const userId = await getSupabaseUserId();
+    
+    if (!userId) {
+      return { success: false, data: [], message: 'User not authenticated' };
+    }
+    
+    const supabase = createClient();
+    
+    // Get friends where the user is the requester
+    const { data: sentRequests, error: sentError } = await supabase
+      .from('friend_relationships')
+      .select(`
+        id,
+        status,
+        created_at,
+        updated_at,
+        friend:friend_id (
+          id,
+          clerk_id,
+          email
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'accepted');
+      
+    if (sentError) {
+      console.error('Error getting sent friend requests:', sentError);
+      return { success: false, data: [], message: 'Error getting friends' };
+    }
+    
+    // Get friends where the user is the recipient
+    const { data: receivedRequests, error: receivedError } = await supabase
+      .from('friend_relationships')
+      .select(`
+        id,
+        status,
+        created_at,
+        updated_at,
+        friend:user_id (
+          id,
+          clerk_id,
+          email
+        )
+      `)
+      .eq('friend_id', userId)
+      .eq('status', 'accepted');
+      
+    if (receivedError) {
+      console.error('Error getting received friend requests:', receivedError);
+      return { success: false, data: [], message: 'Error getting friends' };
+    }
+    
+    // Combine and format the results
+    const sentFriends = sentRequests.map(req => ({
+      relationshipId: req.id,
+      userId: req.friend.id,
+      clerkId: req.friend.clerk_id,
+      email: req.friend.email,
+      since: req.created_at
+    }));
+    
+    const receivedFriends = receivedRequests.map(req => ({
+      relationshipId: req.id,
+      userId: req.friend.id,
+      clerkId: req.friend.clerk_id,
+      email: req.friend.email,
+      since: req.created_at
+    }));
+    
+    const allFriends = [...sentFriends, ...receivedFriends];
+    
+    return { success: true, data: allFriends, message: 'Friends retrieved successfully' };
+  } catch (error) {
+    console.error('Error in getFriends:', error);
+    return { success: false, data: [], message: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Get pending friend requests for the current user
+ * @returns Array of pending friend requests
+ */
+export async function getPendingFriendRequests() {
+  try {
+    const userId = await getSupabaseUserId();
+    
+    if (!userId) {
+      return { success: false, data: [], message: 'User not authenticated' };
+    }
+    
+    const supabase = createClient();
+    
+    // Get pending requests where the user is the recipient
+    const { data: pendingRequests, error } = await supabase
+      .from('friend_relationships')
+      .select(`
+        id,
+        created_at,
+        requester:user_id (
+          id,
+          clerk_id,
+          email
+        )
+      `)
+      .eq('friend_id', userId)
+      .eq('status', 'pending');
+      
+    if (error) {
+      console.error('Error getting pending friend requests:', error);
+      return { success: false, data: [], message: 'Error getting pending requests' };
+    }
+    
+    // Format the results
+    const formattedRequests = pendingRequests.map(req => ({
+      requestId: req.id,
+      userId: req.requester.id,
+      clerkId: req.requester.clerk_id,
+      email: req.requester.email,
+      requestedAt: req.created_at
+    }));
+    
+    return { 
+      success: true, 
+      data: formattedRequests, 
+      message: 'Pending requests retrieved successfully' 
+    };
+  } catch (error) {
+    console.error('Error in getPendingFriendRequests:', error);
+    return { success: false, data: [], message: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Get the friends leaderboard
+ * @param timeframe 'daily', 'weekly', 'monthly', or 'all-time'
+ * @param limit Number of results to return
+ * @returns Array of friends with their scores
+ */
+export async function getFriendsLeaderboard(timeframe = 'all-time', limit = 10) {
+  try {
+    const userId = await getSupabaseUserId();
+    
+    if (!userId) {
+      return { success: false, data: [], message: 'User not authenticated' };
+    }
+    
+    const supabase = createClient();
+    
+    // Get the user's friends
+    const friendsResult = await getFriends();
+    
+    if (!friendsResult.success || friendsResult.data.length === 0) {
+      return { 
+        success: true, 
+        data: [], 
+        message: 'No friends found or error retrieving friends' 
+      };
+    }
+    
+    const friendIds = friendsResult.data.map(friend => friend.userId);
+    // Add the current user to include them in the leaderboard
+    friendIds.push(userId);
+    
+    let query = supabase
+      .from('user_game_history')
+      .select(`
+        id,
+        score,
+        correct_answers,
+        total_questions,
+        difficulty,
+        game_date,
+        user:user_id (
+          id,
+          clerk_id,
+          email
+        )
+      `)
+      .in('user_id', friendIds)
+      .order('score', { ascending: false })
+      .limit(limit);
+    
+    // Apply timeframe filter
+    const now = new Date();
+    if (timeframe === 'daily') {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      query = query.gte('game_date', today);
+    } else if (timeframe === 'weekly') {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(now.getDate() - 7);
+      query = query.gte('game_date', weekAgo.toISOString());
+    } else if (timeframe === 'monthly') {
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(now.getMonth() - 1);
+      query = query.gte('game_date', monthAgo.toISOString());
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error getting friends leaderboard:', error);
+      return { success: false, data: [], message: 'Error getting leaderboard' };
+    }
+    
+    // Format the results
+    const leaderboard = data.map(entry => ({
+      gameId: entry.id,
+      userId: entry.user.id,
+      email: entry.user.email,
+      score: entry.score,
+      correctAnswers: entry.correct_answers,
+      totalQuestions: entry.total_questions,
+      difficulty: entry.difficulty,
+      gameDate: entry.game_date,
+      isCurrentUser: entry.user.id === userId
+    }));
+    
+    return { 
+      success: true, 
+      data: leaderboard, 
+      message: 'Leaderboard retrieved successfully' 
+    };
+  } catch (error) {
+    console.error('Error in getFriendsLeaderboard:', error);
+    return { success: false, data: [], message: 'An unexpected error occurred' };
+  }
+}
+
+// Re-export functions from user-actions.ts for backward compatibility
+export { 
+  getSupabaseUserId,
+  getFriends,
+  getPendingFriendRequests,
+  sendFriendRequest,
+  respondToFriendRequest,
+  getFriendsLeaderboard
+} from './user-actions'; 

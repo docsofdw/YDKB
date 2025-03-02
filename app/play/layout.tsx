@@ -1,4 +1,9 @@
-import { GameProvider } from "@/app/hooks/useGameContext"
+import ClientGameProvider from "@/app/components/ClientGameProvider";
+
+export const metadata = {
+  title: 'Play | You Don\'t Know Ball',
+  description: 'Test your NFL knowledge with daily challenges and on-demand quizzes.',
+};
 
 export default function PlayLayout({
   children,
@@ -8,7 +13,7 @@ export default function PlayLayout({
   return (
     <div className="min-h-screen bg-deep-slate flex flex-col">
       <div className="flex-1 container mx-auto px-4 py-10 flex flex-col">
-        <GameProvider>{children}</GameProvider>
+        <ClientGameProvider>{children}</ClientGameProvider>
       </div>
     </div>
   )

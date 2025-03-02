@@ -52,10 +52,22 @@ export default function AuthenticatedHome() {
             <p className="text-silver-gray mb-6">Ready to test your NFL college knowledge today?</p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/play" className="btn-primary text-center">
+              <Link 
+                href="/play" 
+                className="btn-primary text-center"
+              >
                 Play Today's Challenge
               </Link>
-              <Link href="/profile" className="btn-secondary text-center">
+              <Link 
+                href="/friends" 
+                className="btn-secondary text-center"
+              >
+                Friends & Leaderboard
+              </Link>
+              <Link 
+                href="/profile" 
+                className="btn-secondary text-center"
+              >
                 View Your Stats
               </Link>
             </div>
@@ -86,7 +98,10 @@ export default function AuthenticatedHome() {
                 {dailyChallenge.completionRate}% completion rate
               </span>
             </div>
-            <Link href="/play" className="btn-primary w-full text-center block">
+            <Link 
+              href="/play" 
+              className="btn-primary w-full text-center block"
+            >
               Start Challenge
             </Link>
           </motion.div>
@@ -120,7 +135,10 @@ export default function AuthenticatedHome() {
                 <p className="text-xl font-bold text-chalk-white">{userStats.streak} days</p>
               </div>
             </div>
-            <Link href="/profile" className="text-highlight-blue text-sm font-medium hover:text-highlight-blue/80 transition-colors flex items-center justify-center">
+            <Link 
+              href="/profile" 
+              className="text-highlight-blue text-sm font-medium hover:text-highlight-blue/80 transition-colors flex items-center justify-center"
+            >
               View Full Stats <span className="ml-1">→</span>
             </Link>
           </motion.div>
@@ -149,7 +167,10 @@ export default function AuthenticatedHome() {
                 </div>
               ))}
             </div>
-            <Link href="/leaderboard" className="text-highlight-blue text-sm font-medium hover:text-highlight-blue/80 transition-colors flex items-center justify-center mt-4">
+            <Link 
+              href="/leaderboard" 
+              className="text-highlight-blue text-sm font-medium hover:text-highlight-blue/80 transition-colors flex items-center justify-center mt-4"
+            >
               View Leaderboard <span className="ml-1">→</span>
             </Link>
           </motion.div>
