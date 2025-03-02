@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { X, Check, AlertCircle } from "lucide-react";
+import { X, Check, AlertCircle, ChevronRight, Trophy, Zap, RotateCcw, Gamepad2 } from "lucide-react";
 import { getRandomPlayer, getTodaysChallengePlayer, getColleges } from "../lib/supabase-client";
 import { setupJQueryFix, cleanupJQueryFix } from "../utils/jquery-fix";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Declare jQuery types to prevent TypeScript errors
 declare global {
@@ -29,6 +30,14 @@ interface College {
   name: string;
 }
 
+interface GameMode {
+  id: 'easy' | 'hard' | 'hof' | 'random';
+  title: string;
+  description: string;
+  icon: JSX.Element;
+  color: string;
+}
+
 export default function PlayPage() {
   const { isLoaded, userId } = useAuth();
   const router = useRouter();
@@ -45,8 +54,43 @@ export default function PlayPage() {
   const [difficulty, setDifficulty] = useState<'easy' | 'hard' | 'hof' | 'random'>('easy');
   const [collegeList, setCollegeList] = useState<College[]>([]);
   
+  // New state for game mode selection
+  const [gameScreen, setGameScreen] = useState<'selection' | 'game'>('selection');
+  
   // Maximum attempts allowed
   const MAX_ATTEMPTS = 3;
+  
+  // Game modes
+  const gameModes: GameMode[] = [
+    {
+      id: 'easy',
+      title: 'Rookie Mode',
+      description: 'Current NFL stars and well-known players',
+      icon: <Gamepad2 className="w-6 h-6" />,
+      color: 'var(--easy)'
+    },
+    {
+      id: 'hard',
+      title: 'Pro Mode',
+      description: 'More challenging players from recent seasons',
+      icon: <Zap className="w-6 h-6" />,
+      color: 'var(--hard)'
+    },
+    {
+      id: 'hof',
+      title: 'Hall of Fame',
+      description: 'Legendary players from NFL history',
+      icon: <Trophy className="w-6 h-6" />,
+      color: 'var(--hall-of-fame)'
+    },
+    {
+      id: 'random',
+      title: 'Random Challenge',
+      description: 'Any player from the NFL database',
+      icon: <RotateCcw className="w-6 h-6" />,
+      color: 'var(--highlight-blue)'
+    }
+  ];
   
   // Prevent jQuery errors
   useEffect(() => {
@@ -161,10 +205,16 @@ export default function PlayPage() {
   useEffect(() => {
     if (isLoaded && !userId) {
       router.push('/login');
-    } else if (isLoaded) {
+    } else if (isLoaded && gameScreen === 'game') {
       fetchPlayerData();
     }
-  }, [isLoaded, userId, router, difficulty]);
+  }, [isLoaded, userId, router, difficulty, gameScreen]);
+  
+  // Handle game mode selection
+  const handleGameModeSelect = (mode: 'easy' | 'hard' | 'hof' | 'random') => {
+    setDifficulty(mode);
+    setGameScreen('game');
+  };
   
   // Handle input change and show college suggestions
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,28 +299,12 @@ export default function PlayPage() {
     }, 100);
   };
   
-  // Change difficulty
-  const handleDifficultyChange = (newDifficulty: 'easy' | 'hard' | 'hof' | 'random') => {
-    if (difficulty !== newDifficulty) {
-      setDifficulty(newDifficulty);
-      setGuess('');
-      setAttempts([]);
-      setGameStatus('playing');
-      setLoading(true); // Set loading to true before fetching new player
-      
-      // Use setTimeout to ensure state updates before fetching new data
-      setTimeout(() => {
-        fetchPlayerData()
-          .catch(err => {
-            console.error('Error in handleDifficultyChange:', err);
-            setError('Failed to load player with the selected difficulty. Please try again.');
-          })
-          .finally(() => {
-            // Ensure loading is set to false even if there's an error
-            setLoading(false);
-          });
-      }, 100);
-    }
+  // Change difficulty and return to selection screen
+  const changeGameMode = () => {
+    setGuess('');
+    setAttempts([]);
+    setGameStatus('playing');
+    setGameScreen('selection');
   };
 
   // Test database connection
@@ -298,6 +332,56 @@ export default function PlayPage() {
     );
   }
 
+  // Game Mode Selection Screen
+  if (gameScreen === 'selection') {
+    return (
+      <div className="max-w-4xl mx-auto pt-10 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl font-bold mb-3">Select Game Mode</h1>
+          <p className="text-silver-gray text-lg">Choose your challenge level</p>
+        </motion.div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {gameModes.map((mode, index) => (
+            <motion.div
+              key={mode.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+              className="card hover:shadow-lg cursor-pointer overflow-hidden"
+              style={{ transform: 'none' }} // Override the default card hover scale
+              onClick={() => handleGameModeSelect(mode.id)}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div 
+                    className="w-12 h-12 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: `${mode.color}20`, color: mode.color }}
+                  >
+                    {mode.icon}
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-silver-gray" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">{mode.title}</h3>
+                <p className="text-silver-gray">{mode.description}</p>
+              </div>
+              <div 
+                className="h-1.5" 
+                style={{ backgroundColor: mode.color }}
+              ></div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -311,7 +395,7 @@ export default function PlayPage() {
   
   if (error) {
     return (
-      <div className="card p-8 text-center">
+      <div className="card p-8 text-center max-w-xl mx-auto mt-10">
         <AlertCircle className="w-16 h-16 text-penalty-red mx-auto mb-4" />
         <p className="text-lg text-silver-gray">{error}</p>
         <div className="flex flex-col gap-3 mt-4">
@@ -320,6 +404,12 @@ export default function PlayPage() {
             className="btn-primary"
           >
             Try Again
+          </button>
+          <button 
+            onClick={changeGameMode}
+            className="btn-secondary"
+          >
+            Change Game Mode
           </button>
           <button 
             onClick={testDatabaseConnection}
@@ -334,7 +424,7 @@ export default function PlayPage() {
   
   if (!player) {
     return (
-      <div className="card p-8 text-center">
+      <div className="card p-8 text-center max-w-xl mx-auto mt-10">
         <AlertCircle className="w-16 h-16 text-penalty-red mx-auto mb-4" />
         <p className="text-lg text-silver-gray">No player data available</p>
         <div className="flex flex-col gap-3 mt-4">
@@ -343,6 +433,12 @@ export default function PlayPage() {
             className="btn-primary"
           >
             Try Again
+          </button>
+          <button 
+            onClick={changeGameMode}
+            className="btn-secondary"
+          >
+            Change Game Mode
           </button>
           <button 
             onClick={testDatabaseConnection}
@@ -355,176 +451,236 @@ export default function PlayPage() {
     );
   }
 
+  // Get current game mode info
+  const currentMode = gameModes.find(mode => mode.id === difficulty) || gameModes[0];
+
   return (
-    <div className="max-w-xl mx-auto pt-6">
-      <div className="card p-8 mb-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Today's Challenge</h1>
-          <p className="text-silver-gray text-sm">Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</p>
-        </div>
-        
-        {/* Difficulty selector */}
-        <div className="flex justify-center gap-2 mb-8">
-          <button 
-            onClick={() => handleDifficultyChange('easy')}
-            className={`px-3 py-1 rounded-full text-sm ${
-              difficulty === 'easy' 
-                ? 'bg-highlight-blue text-white' 
-                : 'bg-deep-slate text-silver-gray'
-            }`}
-          >
-            Easy
-          </button>
-          <button 
-            onClick={() => handleDifficultyChange('hard')}
-            className={`px-3 py-1 rounded-full text-sm ${
-              difficulty === 'hard' 
-                ? 'bg-highlight-blue text-white' 
-                : 'bg-deep-slate text-silver-gray'
-            }`}
-          >
-            Hard
-          </button>
-          <button 
-            onClick={() => handleDifficultyChange('hof')}
-            className={`px-3 py-1 rounded-full text-sm ${
-              difficulty === 'hof' 
-                ? 'bg-highlight-blue text-white' 
-                : 'bg-deep-slate text-silver-gray'
-            }`}
-          >
-            Hall of Fame
-          </button>
-          <button 
-            onClick={() => handleDifficultyChange('random')}
-            className={`px-3 py-1 rounded-full text-sm ${
-              difficulty === 'random' 
-                ? 'bg-highlight-blue text-white' 
-                : 'bg-deep-slate text-silver-gray'
-            }`}
-          >
-            Random
-          </button>
-        </div>
-        
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold">
-            {gameStatus === 'won' ? 'Correct! 🎉' : 
-             gameStatus === 'lost' ? `Game Over! The answer was ${player.college}` : 
-             'Guess the college of this NFL player'}
-          </h2>
-        </div>
-        
-        {/* Player image */}
-        <div className="mb-6 flex justify-center">
-          <div className="w-48 h-48 bg-midnight-navy rounded-full overflow-hidden flex items-center justify-center">
-            {player.image_url ? (
-              <img 
-                src={player.image_url} 
-                alt={player.name} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-4xl font-bold text-silver-gray">
-                {player.name.charAt(0)}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Player name */}
-        <div className="text-center mb-10">
-          <h3 className="text-xl font-bold">{player.name}</h3>
-          <p className="text-silver-gray text-sm mt-1">{player.position}</p>
-          {player.team && <p className="text-silver-gray text-sm">{player.team}</p>}
-        </div>
-        
-        {/* Previous attempts */}
-        {attempts.length > 0 && (
-          <div className="mb-8">
-            <p className="text-sm text-silver-gray mb-2">Previous guesses:</p>
-            <div className="flex flex-col gap-2">
-              {attempts.map((attempt, index) => (
-                <div 
-                  key={index} 
-                  className={`p-2 rounded-md flex items-center justify-between ${
-                    attempt.correct 
-                      ? 'bg-victory-green bg-opacity-20 border border-victory-green' 
-                      : 'bg-penalty-red bg-opacity-20 border border-penalty-red'
-                  }`}
-                >
-                  <span>{attempt.text}</span>
-                  {attempt.correct ? (
-                    <Check className="w-5 h-5 text-victory-green" />
-                  ) : (
-                    <X className="w-5 h-5 text-penalty-red" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Attempt indicators */}
-        <div className="flex justify-center gap-3 mb-8">
-          {[...Array(MAX_ATTEMPTS)].map((_, i) => (
+    <AnimatePresence mode="wait">
+      <motion.div 
+        key="game-screen"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-xl mx-auto pt-6 px-4"
+      >
+        <motion.div 
+          className="card p-8 mb-8"
+          initial={{ y: 20 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <div className="text-center mb-8">
             <div 
-              key={i} 
-              className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                i < attempts.length 
-                  ? attempts[i].correct 
-                    ? 'bg-victory-green' 
-                    : 'bg-penalty-red' 
-                  : 'border-2 border-silver-gray'
-              }`}
-            />
-          ))}
-        </div>
-        
-        {/* Guess form */}
-        {gameStatus === 'playing' ? (
-          <form onSubmit={handleSubmit} className="relative">
-            <input
-              type="text"
-              value={guess}
-              onChange={handleInputChange}
-              placeholder="Enter college name..."
-              className="input-field w-full mb-4 py-3 text-lg"
-              autoComplete="off"
-            />
-            
-            {/* College suggestions dropdown */}
-            {showSuggestions && (
-              <div className="absolute z-10 w-full bg-midnight-navy border border-silver-gray rounded-input shadow-card max-h-60 overflow-auto">
-                {suggestions.map((college, index) => (
-                  <div
-                    key={index}
-                    className="px-4 py-3 cursor-pointer hover:bg-deep-slate"
-                    onClick={() => handleSelectSuggestion(college)}
-                  >
-                    {college}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <button 
-              type="submit" 
-              className="btn-primary w-full py-3 text-lg"
-              disabled={!guess.trim()}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm mb-2"
+              style={{ backgroundColor: `${currentMode.color}20`, color: currentMode.color }}
             >
-              Submit Guess
-            </button>
-          </form>
-        ) : (
-          <button 
-            onClick={resetGame}
-            className="btn-primary w-full py-3 text-lg"
+              {currentMode.icon}
+              <span>{currentMode.title}</span>
+            </div>
+            <h1 className="text-3xl font-bold mb-2">Today's Challenge</h1>
+          </div>
+          
+          {/* Back to game modes button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={changeGameMode}
+            className="flex items-center gap-2 text-silver-gray hover:text-chalk-white transition-colors mb-6 text-sm"
           >
-            Play Again
-          </button>
-        )}
-      </div>
-    </div>
+            <ChevronRight className="w-4 h-4 rotate-180" />
+            <span>Change Game Mode</span>
+          </motion.button>
+          
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold">
+              {gameStatus === 'won' ? 'Correct! 🎉' : 
+               gameStatus === 'lost' ? `Game Over! The answer was ${player.college}` : 
+               'Guess the college of this NFL player'}
+            </h2>
+          </div>
+          
+          {/* Player image */}
+          <motion.div 
+            className="mb-6 flex justify-center"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="w-48 h-48 bg-midnight-navy rounded-full overflow-hidden flex items-center justify-center shadow-lg">
+              {player.image_url ? (
+                <img 
+                  src={player.image_url} 
+                  alt={player.name} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-4xl font-bold text-silver-gray">
+                  {player.name.charAt(0)}
+                </div>
+              )}
+            </div>
+          </motion.div>
+          
+          {/* Player name */}
+          <motion.div 
+            className="text-center mb-10"
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
+            <h3 className="text-xl font-bold">{player.name}</h3>
+            <p className="text-silver-gray text-sm mt-1">{player.position}</p>
+            {player.team && <p className="text-silver-gray text-sm">{player.team}</p>}
+          </motion.div>
+          
+          {/* Previous attempts */}
+          <AnimatePresence>
+            {attempts.length > 0 && (
+              <motion.div 
+                className="mb-8"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                transition={{ duration: 0.3 }}
+              >
+                <p className="text-sm text-silver-gray mb-2">Previous guesses:</p>
+                <div className="flex flex-col gap-2">
+                  {attempts.map((attempt, index) => (
+                    <motion.div 
+                      key={index} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                      className={`p-2 rounded-md flex items-center justify-between ${
+                        attempt.correct 
+                          ? 'bg-victory-green bg-opacity-20 border border-victory-green' 
+                          : 'bg-penalty-red bg-opacity-20 border border-penalty-red'
+                      }`}
+                    >
+                      <span>{attempt.text}</span>
+                      {attempt.correct ? (
+                        <Check className="w-5 h-5 text-victory-green" />
+                      ) : (
+                        <X className="w-5 h-5 text-penalty-red" />
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Attempt indicators */}
+          <div className="flex justify-center gap-3 mb-8">
+            {[...Array(MAX_ATTEMPTS)].map((_, i) => (
+              <motion.div 
+                key={i} 
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ 
+                  scale: 1, 
+                  opacity: 1,
+                  backgroundColor: i < attempts.length 
+                    ? attempts[i].correct 
+                      ? 'var(--victory-green)' 
+                      : 'var(--penalty-red)' 
+                    : 'transparent'
+                }}
+                transition={{ duration: 0.3, delay: i * 0.1 + 0.4 }}
+                className={`w-4 h-4 rounded-full transition-all duration-300 ${
+                  i < attempts.length 
+                    ? attempts[i].correct 
+                      ? 'bg-victory-green' 
+                      : 'bg-penalty-red' 
+                    : 'border-2 border-silver-gray'
+                }`}
+              />
+            ))}
+          </div>
+          
+          {/* Guess form */}
+          {gameStatus === 'playing' ? (
+            <motion.form 
+              onSubmit={handleSubmit} 
+              className="relative"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+            >
+              <input
+                type="text"
+                value={guess}
+                onChange={handleInputChange}
+                placeholder="Enter college name..."
+                className="input-field w-full mb-4 py-3 text-lg"
+                autoComplete="off"
+              />
+              
+              {/* College suggestions dropdown */}
+              <AnimatePresence>
+                {showSuggestions && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-10 w-full bg-midnight-navy border border-silver-gray rounded-input shadow-card max-h-60 overflow-auto"
+                  >
+                    {suggestions.map((college, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: index * 0.03 }}
+                        className="px-4 py-3 cursor-pointer hover:bg-deep-slate"
+                        onClick={() => handleSelectSuggestion(college)}
+                      >
+                        {college}
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <motion.button 
+                type="submit" 
+                className="btn-primary w-full py-3 text-lg"
+                disabled={!guess.trim()}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+              >
+                Submit Guess
+              </motion.button>
+            </motion.form>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            >
+              <motion.button 
+                onClick={resetGame}
+                className="btn-primary w-full py-3 text-lg mb-3"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+              >
+                Play Again
+              </motion.button>
+              
+              <motion.button 
+                onClick={changeGameMode}
+                className="btn-secondary w-full py-3 text-lg"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+              >
+                Change Game Mode
+              </motion.button>
+            </motion.div>
+          )}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 } 
