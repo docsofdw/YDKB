@@ -1,79 +1,43 @@
 /**
  * YDKB - You Don't Know Ball
  * 
- * HOME COMPONENT
+ * AUTHENTICATED HOME COMPONENT
  * 
- * A simplified, Wordle-inspired home page that works for both
- * authenticated and non-authenticated users.
+ * The home page shown to authenticated users, featuring their daily challenge
+ * and archive access.
  */
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useAuth } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 
-export default function HomePage() {
-  const { isSignedIn } = useAuth();
+export default function AuthenticatedHome() {
+  const { user } = useUser();
+  const firstName = user?.firstName || 'Player';
   
   return (
-    <div className="min-h-screen bg-deep-slate text-chalk-white flex flex-col items-center justify-center px-4">
+    <div className="bg-background text-gray-100 min-h-screen flex items-center justify-center">
       <motion.div
-        className="text-center max-w-md w-full"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="text-center px-4"
       >
-        {/* Logo/Title */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold font-montserrat mb-4">YDKB</h1>
-          <p className="text-xl text-silver-gray mb-2">
-            Daily NFL Knowledge Test
-          </p>
-          <div className="space-y-1 text-md text-silver-gray/80">
-            <p>3 Questions • 3 Difficulty Levels</p>
-            <p>1 Chance Per Question</p>
-            <p>Think You Know Ball?</p>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          <Link 
-            href="/play" 
-            className="btn-primary w-full py-3 text-center block bg-turf-green hover:bg-turf-green/90 transition-colors"
-          >
-            Play Today's Quiz
+        <h1 className="text-5xl md:text-6xl font-bold mb-4">
+          Welcome Back, <span className="gradient-text">{firstName}</span>
+        </h1>
+        
+        <p className="text-xl text-gray-300 mb-12 max-w-md mx-auto">
+          Ready to test your knowledge of NFL players' college careers?
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <Link href="/play" className="btn-primary w-full sm:w-auto text-lg px-8 py-3">
+            Play Now
           </Link>
-          
-          {!isSignedIn ? (
-            <>
-              <Link 
-                href="/sign-in"
-                className="btn-secondary w-full py-3 text-center block border border-silver-gray/30 hover:bg-midnight-navy transition-colors"
-              >
-                Log in
-              </Link>
-              <Link 
-                href="/subscribe" 
-                className="btn-secondary w-full py-3 text-center block border border-silver-gray/30 hover:bg-midnight-navy transition-colors"
-              >
-                Subscribe for up to 75% off
-              </Link>
-            </>
-          ) : (
-            <Link 
-              href="/stats" 
-              className="btn-secondary w-full py-3 text-center block border border-silver-gray/30 hover:bg-midnight-navy transition-colors"
-            >
-              View Stats
-            </Link>
-          )}
-        </div>
-
-        {/* Metadata */}
-        <div className="mt-12 text-sm text-silver-gray">
-          <p>March 5, 2025</p>
-          <p>No. 1355</p>
-          <p>Edited by Tracy Bennett</p>
+          <Link href="/archive" className="btn-secondary w-full sm:w-auto text-lg px-8 py-3">
+            View Archive
+          </Link>
         </div>
       </motion.div>
     </div>

@@ -1,63 +1,66 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* YDKB Brand Colors */
-  --deep-slate: #121620;
-  --turf-green: #00A550;
-  --pigskin-brown: #8B4513;
-  --midnight-navy: #1A1F2E;
-  --chalk-white: #F5F5F5;
-  --silver-gray: #C0C0C0;
+  /* Primary Colors */
+  --background: #121214;
+  --surface: #1E1E22;
+  --primary-green: #4ADE80;
+  --secondary-green: #22C55E;
   
-  /* Functional Colors */
-  --victory-green: #00A550;
-  --penalty-red: #E53935;
-  --warning-yellow: #FFC107;
-  --highlight-blue: #0288D1;
+  /* Secondary Colors */
+  --gray-100: #F4F4F5;
+  --gray-300: #D4D4D8;
+  --gray-500: #71717A;
+  --gray-700: #3F3F46;
+  --gray-800: #27272A;
   
-  /* Difficulty Level Colors */
-  --easy: #00A550;
-  --hard: #FFC107;
-  --hall-of-fame: #9C27B0;
+  /* Semantic Colors */
+  --success: #4ADE80;
+  --warning: #FACC15;
+  --error: #EF4444;
+  --info: #3B82F6;
 }
 
 @layer base {
   html {
     font-family: 'Inter', sans-serif;
-    background-color: var(--deep-slate);
-    color: var(--chalk-white);
+    background-color: var(--background);
+    color: var(--gray-100);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
-    background-color: var(--deep-slate);
-    color: var(--chalk-white);
+    background-color: var(--background);
+    color: var(--gray-100);
     line-height: 1.5;
     margin: 0;
     padding: 0;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    line-height: 1.25;
     margin: 0;
   }
   
   h1 {
-    font-size: 32px;
-    font-weight: 800;
+    font-size: 2.25rem;
+    letter-spacing: -0.025em;
   }
   
   h2 {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 1.875rem;
+    letter-spacing: -0.025em;
   }
   
   h3 {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: -0.025em;
   }
   
   a {
@@ -69,111 +72,137 @@
 @layer components {
   /* Button Styles */
   .btn-primary {
-    @apply bg-turf-green text-deep-slate font-semibold py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block border-0 cursor-pointer;
+    @apply bg-primary-green text-background font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200 inline-flex items-center justify-center;
   }
   
   .btn-primary:hover {
-    @apply brightness-110;
+    @apply bg-secondary-green shadow-lg shadow-green-glow;
   }
   
   .btn-primary:active {
-    @apply brightness-95;
+    @apply transform scale-[0.98];
   }
   
   .btn-secondary {
-    @apply bg-transparent text-highlight-blue border border-highlight-blue font-medium py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block cursor-pointer;
+    @apply bg-transparent text-primary-green border border-primary-green font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200 inline-flex items-center justify-center;
   }
   
   .btn-secondary:hover {
-    @apply brightness-110;
+    @apply bg-primary-green/10 border-secondary-green text-secondary-green shadow-lg shadow-green-glow;
   }
   
   .btn-secondary:active {
-    @apply brightness-95;
+    @apply transform scale-[0.98];
   }
   
-  .btn-success {
-    @apply bg-victory-green text-chalk-white font-medium py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block border-0 cursor-pointer;
-  }
-  
-  .btn-danger {
-    @apply bg-penalty-red text-chalk-white font-medium py-2 px-4 rounded-button shadow-button transition-all duration-150 inline-block border-0 cursor-pointer;
-  }
-  
-  .btn-compact {
-    @apply py-1 px-2 text-body-small;
+  .btn-disabled {
+    @apply bg-gray-700 text-gray-500 cursor-not-allowed;
   }
   
   /* Card Styles */
   .card {
-    @apply bg-midnight-navy rounded-card shadow-card p-6 transition-all duration-200;
+    @apply bg-surface rounded-xl shadow-lg p-6 transition-all duration-200 border border-gray-700;
   }
   
   .card:hover {
-    @apply scale-[1.02];
+    @apply transform scale-[1.01] shadow-xl;
   }
   
   /* Input Styles */
   .input-field {
-    @apply h-10 rounded-input border border-silver-gray py-2 px-3 bg-transparent text-chalk-white;
+    @apply h-11 rounded-lg border border-gray-700 bg-gray-800 py-2 px-3 text-gray-100 placeholder-gray-500 focus:border-primary-green focus:ring-1 focus:ring-primary-green focus:shadow-green-glow transition-all duration-200;
   }
   
-  .input-field:focus {
-    @apply border-2 border-highlight-blue outline-none;
+  .input-field:disabled {
+    @apply bg-gray-700 text-gray-500 cursor-not-allowed;
   }
   
   .input-error {
-    @apply border-2 border-penalty-red;
+    @apply border-error focus:border-error focus:ring-error;
   }
   
   /* Game Grid Styles */
   .game-grid-cell {
-    @apply border border-silver-gray/20 transition-all duration-150;
+    @apply border border-gray-700 transition-all duration-200;
   }
   
   .game-grid-cell:hover {
-    @apply bg-midnight-navy/50;
+    @apply bg-gray-800/50;
   }
   
   .game-grid-cell-selected {
-    @apply border-highlight-blue;
+    @apply border-primary-green shadow-green-glow;
   }
   
   .game-grid-cell-correct {
-    @apply border-victory-green bg-victory-green/10;
+    @apply border-success bg-success/10;
   }
   
   .game-grid-cell-incorrect {
-    @apply border-penalty-red bg-penalty-red/10;
+    @apply border-error bg-error/10;
   }
   
-  /* Text Colors */
-  .text-turf-green {
-    color: var(--turf-green);
+  /* Navigation Styles */
+  .nav-item {
+    @apply text-gray-300 font-medium hover:text-primary-green transition-colors duration-200;
   }
   
-  .text-chalk-white {
-    color: var(--chalk-white);
+  .nav-item-active {
+    @apply text-primary-green border-b-2 border-primary-green;
   }
   
-  .text-silver-gray {
-    color: var(--silver-gray);
+  /* Difficulty Indicators */
+  .difficulty-easy {
+    @apply text-success;
   }
   
-  .text-highlight-blue {
-    color: var(--highlight-blue);
+  .difficulty-hard {
+    @apply text-warning;
   }
   
-  /* Background Colors */
-  .bg-deep-slate {
-    background-color: var(--deep-slate);
+  .difficulty-hof {
+    @apply text-info;
   }
   
-  .bg-midnight-navy {
-    background-color: var(--midnight-navy);
+  /* Strike Indicator */
+  .strike-indicator {
+    @apply w-4 h-4 rounded-full border border-gray-700 transition-all duration-200;
   }
   
-  .bg-turf-green {
-    background-color: var(--turf-green);
+  .strike-indicator-active {
+    @apply bg-error border-error animate-pulse;
+  }
+  
+  /* Animations */
+  .animate-fade-in {
+    @apply animate-fade-in;
+  }
+  
+  .animate-fade-out {
+    @apply animate-fade-out;
+  }
+  
+  .animate-shake {
+    @apply animate-shake;
+  }
+  
+  /* Responsive Text */
+  .text-responsive {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+  
+  /* Focus Styles */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-green focus:ring-offset-2 focus:ring-offset-background;
+  }
+  
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-green to-secondary-green;
+  }
+  
+  /* Glass Effect */
+  .glass {
+    @apply bg-surface/80 backdrop-blur-sm border border-gray-700/50;
   }
 } 

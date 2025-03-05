@@ -3,6 +3,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { auth } from '@clerk/nextjs/server';
+import { createSafeClient } from './supabase-client';
 
 /**
  * Create a Supabase client with proper headers to prevent 406 errors
@@ -424,187 +425,166 @@ export async function getUserGameHistory(limit = 10) {
   }
 }
 
-/**
- * Save user game history to Supabase
- * @param gameData Game data to save
- * @returns The game ID or null if failed
- */
-export async function saveUserGameHistory(gameData: {
+interface GameHistoryData {
+  game_date: string;
   score: number;
   correct_answers: number;
   total_questions: number;
   time_taken: number;
   difficulty: string;
-}) {
+}
+
+interface QuestionHistoryData {
+  game_id: string;
+  player_id: number;
+  answered_correctly: boolean;
+  time_taken: number;
+}
+
+export async function saveUserGameHistory(gameData: GameHistoryData) {
   try {
-    const userId = await getSupabaseUserId();
-    
+    const supabase = createSafeClient();
+    const { userId } = auth();
+
     if (!userId) {
-      return { success: false, message: 'User not authenticated' };
+      throw new Error('User not authenticated');
     }
-    
-    // Initialize Supabase client
-    const supabase = createClient();
-    
+
+    // Get the user's Supabase ID from the users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_id', userId)
+      .single();
+
+    if (userError || !userData) {
+      throw new Error('User not found in database');
+    }
+
     // Insert game history
-    const { data, error } = await supabase
+    const { data: gameHistory, error: gameError } = await supabase
       .from('user_game_history')
-      .insert([{
-        user_id: userId,
+      .insert({
+        user_id: userData.id,
         ...gameData
-      }])
-      .select();
-      
-    if (error || !data) {
-      console.error('Error saving game history:', error);
-      return { success: false, message: 'Failed to save game history' };
+      })
+      .select('id')
+      .single();
+
+    if (gameError) {
+      throw gameError;
     }
-    
+
     // Update user stats
-    await updateUserStats(userId, gameData);
-    
-    return { success: true, message: 'Game history saved successfully', gameId: data[0].id };
+    await updateUserStats(userData.id, gameData);
+
+    return {
+      success: true,
+      gameId: gameHistory?.id
+    };
   } catch (error) {
-    console.error('Error in saveUserGameHistory:', error);
-    return { success: false, message: 'An error occurred' };
+    console.error('Error saving game history:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }
 
-/**
- * Save user question history to Supabase
- * @param gameId Game ID
- * @param questionData Question data to save
- * @returns Success status
- */
-export async function saveUserQuestionHistory(
-  gameId: string,
-  questionData: {
-    player_id: number;
-    answered_correctly: boolean;
-    time_taken: number;
-  }[]
-) {
+export async function saveUserQuestionHistory(gameId: string, questionsData: QuestionHistoryData[]) {
   try {
-    const userId = await getSupabaseUserId();
-    
-    if (!userId || !gameId) {
-      return { success: false, message: 'User not authenticated or invalid game ID' };
+    const supabase = createSafeClient();
+    const { userId } = auth();
+
+    if (!userId) {
+      throw new Error('User not authenticated');
     }
-    
-    // Initialize Supabase client
-    const supabase = createClient();
-    
-    // Prepare data for insertion
-    const questionsToInsert = questionData.map(question => ({
-      user_id: userId,
-      game_id: gameId,
-      ...question
-    }));
-    
+
+    // Get the user's Supabase ID
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_id', userId)
+      .single();
+
+    if (userError || !userData) {
+      throw new Error('User not found in database');
+    }
+
     // Insert question history
-    const { error } = await supabase
+    const { error: questionError } = await supabase
       .from('user_question_history')
-      .insert(questionsToInsert);
-      
-    if (error) {
-      console.error('Error saving question history:', error);
-      return { success: false, message: 'Failed to save question history' };
+      .insert(
+        questionsData.map(question => ({
+          user_id: userData.id,
+          ...question
+        }))
+      );
+
+    if (questionError) {
+      throw questionError;
     }
-    
-    return { success: true, message: 'Question history saved successfully' };
+
+    return { success: true };
   } catch (error) {
-    console.error('Error in saveUserQuestionHistory:', error);
-    return { success: false, message: 'An error occurred' };
+    console.error('Error saving question history:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }
 
-/**
- * Update user stats in Supabase
- * @param userId Supabase user ID
- * @param gameData Game data
- */
-async function updateUserStats(
-  userId: string,
-  gameData: {
-    score: number;
-    correct_answers: number;
-    total_questions: number;
-  }
-) {
+async function updateUserStats(userId: string, gameData: GameHistoryData) {
+  const supabase = createSafeClient();
+
   try {
-    // Initialize Supabase client
-    const supabase = createClient();
-    
-    // Get current user stats
-    const { data: currentStats, error: fetchError } = await supabase
+    // Get current stats
+    const { data: currentStats, error: statsError } = await supabase
       .from('user_stats')
       .select('*')
       .eq('user_id', userId)
       .single();
-      
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
-      console.error('Error fetching user stats:', fetchError);
-      return;
+
+    if (statsError && statsError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      throw statsError;
     }
-    
-    // Calculate new stats
-    const totalGames = (currentStats?.total_games || 0) + 1;
-    const totalCorrectAnswers = (currentStats?.total_correct_answers || 0) + gameData.correct_answers;
-    const totalQuestionsAttempted = (currentStats?.total_questions_attempted || 0) + gameData.total_questions;
-    const winRate = totalQuestionsAttempted > 0 
-      ? (totalCorrectAnswers / totalQuestionsAttempted) * 100 
-      : 0;
-    
-    // Calculate streak
-    let currentStreak = currentStats?.current_streak || 0;
-    let bestStreak = currentStats?.best_streak || 0;
-    
-    // Consider a win if the user got more than 70% correct
-    const isWin = (gameData.correct_answers / gameData.total_questions) >= 0.7;
-    
-    if (isWin) {
-      currentStreak += 1;
-    } else {
-      currentStreak = 0;
-    }
-    
-    // Update best streak if needed
-    if (currentStreak > bestStreak) {
-      bestStreak = currentStreak;
-    }
-    
-    const statsData = {
+
+    const newStats = {
       user_id: userId,
-      total_games: totalGames,
-      total_correct_answers: totalCorrectAnswers,
-      total_questions_attempted: totalQuestionsAttempted,
-      win_rate: winRate,
-      current_streak: currentStreak,
-      best_streak: bestStreak,
+      total_games: (currentStats?.total_games || 0) + 1,
+      total_correct_answers: (currentStats?.total_correct_answers || 0) + gameData.correct_answers,
+      total_questions_attempted: (currentStats?.total_questions_attempted || 0) + gameData.total_questions,
+      win_rate: calculateWinRate(
+        (currentStats?.total_correct_answers || 0) + gameData.correct_answers,
+        (currentStats?.total_questions_attempted || 0) + gameData.total_questions
+      ),
+      current_streak: gameData.correct_answers === gameData.total_questions 
+        ? (currentStats?.current_streak || 0) + 1 
+        : 0,
+      best_streak: Math.max(
+        currentStats?.best_streak || 0,
+        gameData.correct_answers === gameData.total_questions 
+          ? (currentStats?.current_streak || 0) + 1 
+          : 0
+      ),
       last_played_at: new Date().toISOString()
     };
-    
-    if (!currentStats) {
-      // Insert new stats record if it doesn't exist
-      const { error: insertError } = await supabase
-        .from('user_stats')
-        .insert([statsData]);
-        
-      if (insertError) {
-        console.error('Error inserting user stats:', insertError);
-      }
-    } else {
-      // Update existing stats
-      const { error: updateError } = await supabase
-        .from('user_stats')
-        .update(statsData)
-        .eq('user_id', userId);
-        
-      if (updateError) {
-        console.error('Error updating user stats:', updateError);
-      }
+
+    // Upsert stats
+    const { error: upsertError } = await supabase
+      .from('user_stats')
+      .upsert(newStats);
+
+    if (upsertError) {
+      throw upsertError;
     }
   } catch (error) {
-    console.error('Error in updateUserStats:', error);
+    console.error('Error updating user stats:', error);
   }
+}
+
+function calculateWinRate(totalCorrect: number, totalAttempted: number): number {
+  if (totalAttempted === 0) return 0;
+  return (totalCorrect / totalAttempted) * 100;
 } 

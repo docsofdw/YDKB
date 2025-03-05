@@ -12,31 +12,35 @@ module.exports = {
     theme: {
       container: {
         center: true,
-        padding: "2rem",
+        padding: "1rem",
         screens: {
-          "2xl": "1400px",
+          sm: "640px",
+          md: "768px",
+          lg: "1024px",
+          xl: "1280px",
+          "2xl": "1536px",
         },
       },
       extend: {
         colors: {
-          // YDKB Brand Colors
-          "deep-slate": "#121620", // Primary background
-          "turf-green": "#00A550", // Primary accent/success color
-          "pigskin-brown": "#8B4513", // Secondary accent
-          "midnight-navy": "#1A1F2E", // Secondary background, card backgrounds
-          "chalk-white": "#F5F5F5", // Primary text
-          "silver-gray": "#C0C0C0", // Secondary text, borders, inactive elements
+          // Primary Colors
+          background: "#121214",
+          surface: "#1E1E22",
+          "primary-green": "#4ADE80",
+          "secondary-green": "#22C55E",
           
-          // Functional Colors
-          "victory-green": "#00A550", // Success states, correct answers
-          "penalty-red": "#E53935", // Error states, incorrect answers
-          "warning-yellow": "#FFC107", // Warning states, hints
-          "highlight-blue": "#0288D1", // Focus states, buttons, links
+          // Secondary Colors
+          "gray-100": "#F4F4F5",
+          "gray-300": "#D4D4D8",
+          "gray-500": "#71717A",
+          "gray-700": "#3F3F46",
+          "gray-800": "#27272A",
           
-          // Difficulty Level Colors
-          "easy": "#00A550", // Soft green
-          "hard": "#FFC107", // Caution yellow
-          "hall-of-fame": "#9C27B0", // Prestigious purple
+          // Semantic Colors
+          success: "#4ADE80",
+          warning: "#FACC15",
+          error: "#EF4444",
+          info: "#3B82F6",
           
           // Legacy shadcn colors - keeping for compatibility
           border: "hsl(var(--border))",
@@ -74,46 +78,54 @@ module.exports = {
           },
         },
         fontFamily: {
-          inter: ['Inter', 'sans-serif'],
-          montserrat: ['Montserrat', 'sans-serif'],
+          sans: ['Inter', 'sans-serif'],
+          mono: ['JetBrains Mono', 'monospace'],
         },
         fontSize: {
-          // Type Scale
-          'heading-1': '32px', // Game Title
-          'heading-2': '24px', // Section Titles
-          'heading-3': '20px', // Card Titles
-          'body-large': '16px',
-          'body-default': '14px',
-          'body-small': '12px',
-          'caption': '10px',
+          'xs': '0.75rem',
+          'sm': '0.875rem',
+          'base': '1rem',
+          'lg': '1.125rem',
+          'xl': '1.25rem',
+          '2xl': '1.5rem',
+          '3xl': '1.875rem',
+          '4xl': '2.25rem',
         },
-        fontWeight: {
-          regular: '400',
-          medium: '500',
-          semibold: '600',
-          bold: '700',
-          extrabold: '800',
-        },
-        borderRadius: {
-          lg: "var(--radius)",
-          md: "calc(var(--radius) - 2px)",
-          sm: "calc(var(--radius) - 4px)",
-          'card': '8px',
-          'button': '6px',
-          'input': '6px',
-        },
-        boxShadow: {
-          'card': '0 4px 6px rgba(0, 0, 0, 0.1)',
-          'button': '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        lineHeight: {
+          'tight': '1.25',
+          'normal': '1.5',
+          'relaxed': '1.75',
         },
         spacing: {
-          '4': '4px',   // Extra Small
-          '8': '8px',   // Small
-          '16': '16px', // Medium
-          '24': '24px', // Large
-          '32': '32px', // Extra Large
-          '48': '48px', // 2x Large
-          '64': '64px', // 3x Large
+          '0': '0px',
+          '1': '0.25rem',
+          '2': '0.5rem',
+          '3': '0.75rem',
+          '4': '1rem',
+          '5': '1.25rem',
+          '6': '1.5rem',
+          '8': '2rem',
+          '10': '2.5rem',
+          '12': '3rem',
+          '16': '4rem',
+          '20': '5rem',
+          '24': '6rem',
+        },
+        borderRadius: {
+          'xs': '0.125rem',
+          'sm': '0.25rem',
+          'md': '0.375rem',
+          'lg': '0.5rem',
+          'xl': '0.75rem',
+          '2xl': '1rem',
+          'full': '9999px',
+        },
+        boxShadow: {
+          'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+          'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          'green-glow': '0 0 15px rgba(74, 222, 128, 0.5)',
         },
         keyframes: {
           "accordion-down": {
@@ -133,12 +145,22 @@ module.exports = {
             '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
             '20%, 40%, 60%, 80%': { transform: 'translateX(5px)' },
           },
+          "fade-in": {
+            '0%': { opacity: '0', transform: 'translateY(20px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' },
+          },
+          "fade-out": {
+            '0%': { opacity: '1', transform: 'translateY(0)' },
+            '100%': { opacity: '0', transform: 'translateY(20px)' },
+          },
         },
         animation: {
           "accordion-down": "accordion-down 0.2s ease-out",
           "accordion-up": "accordion-up 0.2s ease-out",
           "pulse": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-          "shake": "shake 0.4s ease-in-out",
+          "shake": "shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97)",
+          "fade-in": "fade-in 0.3s ease-out",
+          "fade-out": "fade-out 0.3s ease-out",
         },
         transitionProperty: {
           'height': 'height',
