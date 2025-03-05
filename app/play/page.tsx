@@ -33,12 +33,12 @@ export default function PlayPage() {
         <div className="text-center p-8 max-w-md mx-auto">
           <h1 className="text-2xl font-bold mb-4">Sign In Required</h1>
           <p className="mb-6">Please sign in to play quizzes.</p>
-          <Link
-            href="/login"
-            className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          <Button
+            onClick={() => window.location.href = '/sign-in'}
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
             Sign In
-          </Link>
+          </Button>
         </div>
       </div>
     );

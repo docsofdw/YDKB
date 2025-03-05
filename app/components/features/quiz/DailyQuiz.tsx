@@ -2,333 +2,263 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { saveUserGameHistory, saveUserQuestionHistory } from '@/app/lib/user-actions';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
+import { Progress } from '@/app/components/ui/progress';
+import { Clock, Trophy, AlertCircle } from 'lucide-react';
 import { getTodaysChallengePlayer } from '@/app/lib/supabase-client';
+import { saveUserGameHistory, saveUserQuestionHistory } from '@/app/lib/user-actions';
 
-type QuizState = 'loading' | 'ready' | 'in-progress' | 'completed' | 'already-played';
-
-type Question = {
-  id: number;
-  playerId: number;
-  playerName: string;
-  playerImage?: string;
-  correctAnswer: string;
-  userAnswer?: string;
-  isCorrect?: boolean;
-  timeTaken?: number;
-};
+type QuizState = 'loading' | 'ready' | 'in-progress' | 'completed' | 'error';
 
 export default function DailyQuiz() {
   const { isSignedIn, isLoaded } = useUser();
   const [quizState, setQuizState] = useState<QuizState>('loading');
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [player, setPlayer] = useState<any>(null);
   const [userAnswer, setUserAnswer] = useState('');
-  const [score, setScore] = useState(0);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [questionStartTime, setQuestionStartTime] = useState<number | null>(null);
-  const [totalTimeTaken, setTotalTimeTaken] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [hasPlayedToday, setHasPlayedToday] = useState(false);
 
   useEffect(() => {
     if (isSignedIn) {
-      checkIfPlayedToday();
-      loadDailyQuiz();
+      loadDailyChallenge();
     }
   }, [isSignedIn]);
 
-  const checkIfPlayedToday = async () => {
-    // This would check if the user has already played today's quiz
-    // For now, we'll just set it to false
-    setHasPlayedToday(false);
-  };
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (quizState === 'in-progress' && startTime) {
+      timer = setInterval(() => {
+        setTimeElapsed(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [quizState, startTime]);
 
-  const loadDailyQuiz = async () => {
-    setQuizState('loading');
-    setError(null);
-    
+  const loadDailyChallenge = async () => {
     try {
-      // Get today's challenge player
-      const playerResult = await getTodaysChallengePlayer();
+      setQuizState('loading');
+      setError(null);
       
-      if (!playerResult || !playerResult.id) {
+      const playerData = await getTodaysChallengePlayer('easy');
+      if (!playerData) {
         throw new Error('Failed to load daily challenge');
       }
       
-      // Create a question from the player
-      const question: Question = {
-        id: 1, // Just one question for now
-        playerId: playerResult.id,
-        playerName: playerResult.name,
-        playerImage: playerResult.image_url || undefined,
-        correctAnswer: playerResult.name.toLowerCase(),
-      };
-      
-      setQuestions([question]);
-      
-      if (hasPlayedToday) {
-        setQuizState('already-played');
-      } else {
-        setQuizState('ready');
-      }
+      setPlayer(playerData);
+      setQuizState('ready');
     } catch (err) {
-      console.error('Error loading daily quiz:', err);
-      setError('Failed to load daily quiz. Please try again later.');
-      setQuizState('ready'); // Set to ready anyway so user can try again
+      setError('Failed to load daily challenge. Please try again later.');
+      setQuizState('error');
     }
   };
 
   const startQuiz = () => {
     setQuizState('in-progress');
-    setCurrentQuestionIndex(0);
-    setScore(0);
     setStartTime(Date.now());
-    setQuestionStartTime(Date.now());
-    setTotalTimeTaken(0);
+    setUserAnswer('');
+    setIsCorrect(null);
   };
 
-  const handleAnswerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserAnswer(e.target.value);
-  };
+  const handleAnswerSubmit = async () => {
+    if (!userAnswer.trim()) return;
 
-  const handleSubmitAnswer = () => {
-    if (!userAnswer.trim()) {
-      return; // Don't submit empty answers
-    }
-    
-    const now = Date.now();
-    const questionTimeTaken = questionStartTime ? (now - questionStartTime) / 1000 : 0;
-    
-    // Get current question
-    const currentQuestion = questions[currentQuestionIndex];
-    
-    // Check if answer is correct (case insensitive)
-    const isCorrect = userAnswer.trim().toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
-    
-    // Update question with user's answer
-    const updatedQuestions = [...questions];
-    updatedQuestions[currentQuestionIndex] = {
-      ...currentQuestion,
-      userAnswer,
-      isCorrect,
-      timeTaken: questionTimeTaken,
-    };
-    
-    setQuestions(updatedQuestions);
-    
-    // Update score
-    if (isCorrect) {
-      setScore(score + 1);
-    }
-    
-    // Update total time
-    setTotalTimeTaken(totalTimeTaken + questionTimeTaken);
-    
-    // Move to next question or complete quiz
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setUserAnswer('');
-      setQuestionStartTime(now);
-    } else {
-      completeQuiz(updatedQuestions, isCorrect ? score + 1 : score);
-    }
-  };
-
-  const completeQuiz = async (finalQuestions: Question[], finalScore: number) => {
+    const isAnswerCorrect = userAnswer.trim().toLowerCase() === player.name.toLowerCase();
+    setIsCorrect(isAnswerCorrect);
     setQuizState('completed');
-    
+
     if (isSignedIn) {
       try {
-        // Save game history
         const gameData = {
-          score: finalScore,
-          correct_answers: finalScore,
-          total_questions: questions.length,
-          time_taken: totalTimeTaken,
+          score: isAnswerCorrect ? 1 : 0,
+          correct_answers: isAnswerCorrect ? 1 : 0,
+          total_questions: 1,
+          time_taken: timeElapsed,
           difficulty: 'daily',
         };
         
         const gameResult = await saveUserGameHistory(gameData);
         
         if (gameResult.success && gameResult.gameId) {
-          // Save question history
-          const questionData = finalQuestions.map(q => ({
-            player_id: q.playerId,
-            answered_correctly: q.isCorrect || false,
-            time_taken: q.timeTaken || 0,
-          }));
-          
-          await saveUserQuestionHistory(gameResult.gameId, questionData);
+          await saveUserQuestionHistory(gameResult.gameId, [{
+            player_id: player.id,
+            answered_correctly: isAnswerCorrect,
+            time_taken: timeElapsed,
+          }]);
         }
       } catch (err) {
-        console.error('Error saving quiz results:', err);
-        // Don't show error to user, just log it
+        // Silent fail for game history
+        console.error('Failed to save game history:', err);
       }
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmitAnswer();
-    }
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (!isLoaded) {
     return (
-      <div className="p-4 text-center">
-        <p>Loading...</p>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!isSignedIn) {
     return (
-      <div className="p-4 text-center">
-        <p>Please sign in to play the daily quiz.</p>
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-lg mb-4">Please sign in to play the daily challenge.</p>
+          <Button asChild>
+            <a href="/sign-in">Sign In</a>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
-  if (error) {
+  if (quizState === 'error') {
     return (
-      <div className="p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p>{error}</p>
-        </div>
-        <button
-          onClick={loadDailyQuiz}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Try Again
-        </button>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col items-center gap-4">
+            <AlertCircle className="h-12 w-12 text-red-500" />
+            <p className="text-red-500">{error}</p>
+            <Button onClick={loadDailyChallenge}>Try Again</Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (quizState === 'loading') {
     return (
-      <div className="p-4 text-center">
-        <p>Loading daily quiz...</p>
-      </div>
-    );
-  }
-
-  if (quizState === 'already-played') {
-    return (
-      <div className="p-4 text-center">
-        <h2 className="text-xl font-bold mb-4">You've already played today's quiz!</h2>
-        <p className="mb-4">Come back tomorrow for a new challenge.</p>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (quizState === 'ready') {
     return (
-      <div className="p-4 text-center">
-        <h2 className="text-xl font-bold mb-4">Daily Quiz Challenge</h2>
-        <p className="mb-6">Test your NFL knowledge with today's challenge!</p>
-        <button
-          onClick={startQuiz}
-          className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          Start Quiz
-        </button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Daily Challenge</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                <span>1 Question</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                <span>Time Attack</span>
+              </div>
+            </div>
+            <p className="text-lg">Ready to test your NFL knowledge?</p>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={startQuiz} className="w-full">Start Challenge</Button>
+        </CardFooter>
+      </Card>
     );
   }
 
   if (quizState === 'completed') {
     return (
-      <div className="p-4 text-center">
-        <h2 className="text-xl font-bold mb-4">Quiz Completed!</h2>
-        <p className="text-lg mb-2">Your Score: {score}/{questions.length}</p>
-        <p className="text-sm text-gray-500 mb-6">Time: {totalTimeTaken.toFixed(1)} seconds</p>
-        
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <h3 className="font-bold mb-2">Results</h3>
-          {questions.map((question, index) => (
-            <div key={index} className="mb-4 p-3 rounded border border-gray-200">
-              <p className="font-medium">Question {index + 1}: Who is this player?</p>
-              {question.playerImage && (
-                <div className="my-2">
-                  <img 
-                    src={question.playerImage} 
-                    alt="NFL Player" 
-                    className="mx-auto h-32 object-cover rounded"
-                  />
-                </div>
-              )}
-              <p className="text-sm">
-                Your answer: <span className={question.isCorrect ? 'text-green-600' : 'text-red-600'}>
-                  {question.userAnswer}
-                </span>
-              </p>
-              {!question.isCorrect && (
-                <p className="text-sm text-green-600">Correct answer: {question.playerName}</p>
-              )}
-              <p className="text-xs text-gray-500">Time: {question.timeTaken?.toFixed(1)}s</p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Challenge Complete!</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-4 items-center text-center">
+            <div className={`text-2xl font-bold ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
+              {isCorrect ? 'Correct!' : 'Incorrect'}
             </div>
-          ))}
-        </div>
-        
-        <button
-          onClick={() => window.location.href = '/'}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Back to Home
-        </button>
-      </div>
+            <p>Time: {formatTime(timeElapsed)}</p>
+            <p>Correct Answer: {player.name}</p>
+            <p>Your Answer: {userAnswer}</p>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <Button asChild>
+            <a href="/play">Return to Play</a>
+          </Button>
+        </CardFooter>
+      </Card>
     );
   }
 
-  // In-progress state
-  const currentQuestion = questions[currentQuestionIndex];
-
   return (
-    <div className="p-4">
-      <div className="mb-4 flex justify-between items-center">
-        <span className="text-sm font-medium">
-          Question {currentQuestionIndex + 1}/{questions.length}
-        </span>
-        <span className="text-sm text-gray-500">
-          Score: {score}
-        </span>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4 text-center">Who is this NFL player?</h2>
-        
-        {currentQuestion.playerImage && (
-          <div className="mb-6">
-            <img 
-              src={currentQuestion.playerImage} 
-              alt="NFL Player" 
-              className="mx-auto h-48 object-cover rounded"
-            />
+    <Card>
+      <CardHeader>
+        <CardTitle>Daily Challenge</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="flex flex-col gap-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              <span>Question 1/1</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              <span className="font-mono">{formatTime(timeElapsed)}</span>
+            </div>
           </div>
-        )}
-        
-        <div className="mb-4">
-          <input
-            type="text"
-            value={userAnswer}
-            onChange={handleAnswerChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter player name"
-            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            autoFocus
-          />
+          
+          <Progress value={100} className="w-full" />
+          
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-center">Who is this NFL player?</h2>
+            
+            {player.image_url && (
+              <div className="flex justify-center">
+                <img 
+                  src={player.image_url} 
+                  alt="NFL Player" 
+                  className="h-48 w-48 object-cover rounded-lg shadow-lg"
+                />
+              </div>
+            )}
+            
+            <div className="flex flex-col gap-2">
+              <Input
+                type="text"
+                value={userAnswer}
+                onChange={(e) => setUserAnswer(e.target.value)}
+                placeholder="Enter player name"
+                className="text-center"
+                onKeyPress={(e) => e.key === 'Enter' && handleAnswerSubmit()}
+                autoFocus
+              />
+              <Button 
+                onClick={handleAnswerSubmit}
+                disabled={!userAnswer.trim()}
+              >
+                Submit Answer
+              </Button>
+            </div>
+          </div>
         </div>
-        
-        <button
-          onClick={handleSubmitAnswer}
-          disabled={!userAnswer.trim()}
-          className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
-        >
-          Submit Answer
-        </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 } 

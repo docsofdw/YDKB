@@ -363,134 +363,52 @@ export async function getTodaysChallengePlayer(difficulty = 'easy') {
   try {
     const supabase = createSafeClient();
     if (!supabase) {
-      console.error('Failed to initialize Supabase client');
       return getFallbackPlayer();
     }
     
-    // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
-    console.log(`Fetching challenge for date: ${today}`);
     
     // First check if the daily_challenges table exists
-    try {
-      const { count, error: countError } = await supabase
-        .from('daily_challenges')
-        .select('*', { count: 'exact', head: true });
-      
-      if (countError) {
-        console.error('Error checking daily_challenges table:', countError);
-        // Fall back to random player
-        console.log('Falling back to random player due to table error');
-        return await getRandomPlayer(difficulty);
-      }
-      
-      if (count === 0) {
-        console.warn('daily_challenges table is empty');
-        // Fall back to random player
-        console.log('Falling back to random player due to empty table');
-        return await getRandomPlayer(difficulty);
-      }
-    } catch (error) {
-      console.error('Unexpected error checking daily_challenges table:', error);
-      // Fall back to random player
-      console.log('Falling back to random player due to unexpected error');
+    const { count, error: countError } = await supabase
+      .from('daily_challenges')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError || count === 0) {
       return await getRandomPlayer(difficulty);
     }
     
     // Try to get the challenge for today's date
-    let challenge;
-    let challengeError;
-    
-    try {
-      const result = await supabase
-        .from('daily_challenges')
-        .select('*')
-        .eq('challenge_date', today)
-        .single();
-      
-      challenge = result.data;
-      challengeError = result.error;
-      
-      // If we get a 406 error, try a direct fetch as a fallback
-      if (challengeError && challengeError.code === '406') {
-        console.log('Got 406 error, trying direct fetch fallback');
-        
-        // Try a direct fetch as a fallback
-        const apiUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/daily_challenges?challenge_date=eq.${today}&limit=1`;
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            challenge = data[0];
-            challengeError = null;
-            console.log('Successfully fetched challenge using direct fetch');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching challenge:', error);
-      challengeError = error;
-    }
+    let { data: challenge, error: challengeError } = await supabase
+      .from('daily_challenges')
+      .select('*')
+      .eq('challenge_date', today)
+      .single();
     
     // If no challenge found for today, try to get the most recent challenge
     if (challengeError || !challenge) {
-      console.log(`No challenge found for date ${today}, trying to find most recent challenge`);
+      const { data: recentChallenges, error: recentError } = await supabase
+        .from('daily_challenges')
+        .select('*')
+        .order('challenge_date', { ascending: false })
+        .limit(1);
       
-      try {
-        const result = await supabase
-          .from('daily_challenges')
-          .select('*')
-          .order('challenge_date', { ascending: false })
-          .limit(1);
-        
-        const recentChallenges = result.data;
-        const recentError = result.error;
-        
-        if (recentError || !recentChallenges || recentChallenges.length === 0) {
-          console.log('No recent challenges found, falling back to random player');
-          return await getRandomPlayer(difficulty);
-        } else {
-          challenge = recentChallenges[0];
-          console.log(`Using most recent challenge from date: ${challenge.challenge_date}`);
-        }
-      } catch (error) {
-        console.error('Error fetching recent challenges:', error);
+      if (recentError || !recentChallenges || recentChallenges.length === 0) {
         return await getRandomPlayer(difficulty);
       }
-    } else {
-      console.log('Found challenge for today:', challenge);
+      
+      challenge = recentChallenges[0];
     }
     
     // Determine which player ID to use based on difficulty
-    let playerId;
-    switch (difficulty) {
-      case 'easy':
-        playerId = challenge.easy_player_id;
-        break;
-      case 'hard':
-        playerId = challenge.hard_player_id;
-        break;
-      case 'hof':
-        playerId = challenge.hof_player_id;
-        break;
-      default:
-        playerId = challenge.easy_player_id;
-    }
+    const playerIdMap = {
+      easy: challenge.easy_player_id,
+      hard: challenge.hard_player_id,
+      hof: challenge.hof_player_id
+    };
     
-    console.log(`Using player ID ${playerId} for difficulty ${difficulty}`);
+    const playerId = playerIdMap[difficulty] || challenge.easy_player_id;
     
-    // If the player ID is missing, fall back to a random player
     if (!playerId) {
-      console.log(`No player ID found for difficulty ${difficulty}, falling back to random player`);
       return await getRandomPlayer(difficulty);
     }
     
@@ -498,65 +416,19 @@ export async function getTodaysChallengePlayer(difficulty = 'easy') {
     const selectColumns = await getPlayerSelectColumns(supabase);
     
     // Get the player data
-    let player;
-    let playerError;
-    
-    try {
-      const result = await supabase
-        .from('players')
-        .select(selectColumns)
-        .eq('id', playerId)
-        .single();
-      
-      player = result.data;
-      playerError = result.error;
-      
-      // If we get a 406 error, try a direct fetch as a fallback
-      if (playerError && playerError.code === '406') {
-        console.log('Got 406 error for player, trying direct fetch fallback');
-        
-        // Try a direct fetch as a fallback
-        const apiUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/players?id=eq.${playerId}&limit=1`;
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            player = data[0];
-            playerError = null;
-            console.log('Successfully fetched player using direct fetch');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching player:', error);
-      playerError = error;
-    }
+    const { data: player, error: playerError } = await supabase
+      .from('players')
+      .select(selectColumns)
+      .eq('id', playerId)
+      .single();
     
     if (playerError || !player) {
-      console.log(`Player with ID ${playerId} not found, falling back to random player`);
       return await getRandomPlayer(difficulty);
     }
     
-    console.log('Successfully found player for today:', player.name);
     return player;
   } catch (error) {
-    console.error('Unexpected error in getTodaysChallengePlayer:', error);
-    // Fall back to random player in case of any error
-    try {
-      return await getRandomPlayer(difficulty);
-    } catch (fallbackError) {
-      console.error('Error in fallback random player:', fallbackError);
-      return getFallbackPlayer();
-    }
+    return await getRandomPlayer(difficulty);
   }
 }
 
