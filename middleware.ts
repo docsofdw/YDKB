@@ -7,7 +7,12 @@ const publicPaths = [
   "/api/colleges",
   "/login",
   "/signup",
-  "/api/webhooks(.*)"
+  "/api/webhooks(.*)",
+  "/api/test-generation",
+  "/api/generate-image",
+  "/api/check-generation",
+  "/test-generation",
+  "/api/admin/generate-challenge-images"
 ];
 
 // Create a route matcher for public paths
@@ -37,7 +42,7 @@ export const config = {
   matcher: [
     // Skip Next.js internals and all static files
     '/((?!_next/static|_next/image|_next/webpack|favicon.ico|.+\\.css|.+\\.js|.+\\.png|.+\\.svg|.+\\.jpg|.+\\.jpeg|.+\\.gif).*)',
-    // Match all API routes
+    // Match all API routes except those that are explicitly public
     '/api/:path*',
   ],
 }; 
