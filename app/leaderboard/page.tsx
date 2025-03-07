@@ -2,9 +2,10 @@
 'use client';
 
 import { GameLeaderboard, Player } from "@/app/components/common/ui/game-leaderboard";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
-import { redirect } from "next/navigation";
+import { SignedIn, SignedOut, useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { Trophy, TrendingUp, Users } from "lucide-react";
 
 // Sample player data for "You Don't Know Ball" game
 const samplePlayers: Player[] = [
@@ -110,30 +111,115 @@ const samplePlayers: Player[] = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5
+    }
+  }
+};
+
 export default function LeaderboardPage() {
+  const { isLoaded } = useUser();
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-gray-100">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <SignedIn>
-        <h1 className="text-3xl font-bold text-center mb-8">Leaderboard</h1>
-        <div className="max-w-4xl mx-auto">
-          <GameLeaderboard players={samplePlayers} />
-        </div>
-      </SignedIn>
-      
-      <SignedOut>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center p-8 max-w-md mx-auto">
-            <h1 className="text-2xl font-bold mb-4">Sign In Required</h1>
-            <p className="mb-6">Please sign in to view the leaderboard.</p>
-            <Link
-              href="/login"
-              className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+    <div className="min-h-screen bg-background text-gray-100">
+      <div className="max-w-[1200px] mx-auto py-16 px-4">
+        <SignedIn>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="text-center mb-16">
+              <span className="bg-primary-green text-background px-3 py-1 font-semibold rounded-lg text-xs uppercase inline-block mb-3 shadow-green-glow">
+                Global Rankings
+              </span>
+              <h1 className="text-4xl font-bold mb-4">
+                Top <span className="gradient-text">Players</span>
+              </h1>
+              <p className="text-gray-300 max-w-2xl mx-auto">
+                See how you stack up against the best players in the community
+              </p>
+            </div>
+
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="max-w-4xl mx-auto"
             >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </SignedOut>
+              <div className="glass rounded-2xl p-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-4 rounded-xl bg-surface/30 border border-gray-700/30">
+                    <Trophy className="w-8 h-8 text-primary-green mx-auto mb-2" />
+                    <h3 className="text-xl font-bold mb-1">Global Rank</h3>
+                    <p className="text-3xl font-bold text-primary-green">#1</p>
+                  </div>
+                  <div className="text-center p-4 rounded-xl bg-surface/30 border border-gray-700/30">
+                    <TrendingUp className="w-8 h-8 text-primary-green mx-auto mb-2" />
+                    <h3 className="text-xl font-bold mb-1">Win Rate</h3>
+                    <p className="text-3xl font-bold text-primary-green">85%</p>
+                  </div>
+                  <div className="text-center p-4 rounded-xl bg-surface/30 border border-gray-700/30">
+                    <Users className="w-8 h-8 text-primary-green mx-auto mb-2" />
+                    <h3 className="text-xl font-bold mb-1">Games Played</h3>
+                    <p className="text-3xl font-bold text-primary-green">42</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass rounded-2xl p-6">
+                <GameLeaderboard players={samplePlayers} />
+              </div>
+            </motion.div>
+          </motion.div>
+        </SignedIn>
+        
+        <SignedOut>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="min-h-screen flex items-center justify-center"
+          >
+            <div className="text-center p-8 max-w-md mx-auto glass rounded-xl">
+              <h1 className="text-2xl font-bold mb-4 text-gray-100">Sign In Required</h1>
+              <p className="mb-6 text-gray-300">Please sign in to view the leaderboard and track your progress.</p>
+              <Link
+                href="/login"
+                className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20 mx-auto"
+              >
+                <span>Sign In</span>
+                <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
+              </Link>
+            </div>
+          </motion.div>
+        </SignedOut>
+      </div>
     </div>
   );
 }

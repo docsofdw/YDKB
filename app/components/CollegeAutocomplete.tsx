@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { Input } from "@/app/components/ui/input";
-import { searchColleges } from '@/app/lib/supabase-client';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search } from 'lucide-react';
+import { colleges } from '../lib/colleges';
 
 interface CollegeAutocompleteProps {
   value: string;
@@ -10,30 +10,15 @@ interface CollegeAutocompleteProps {
 }
 
 export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' }: CollegeAutocompleteProps) {
+  const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (value.length >= 2) {
-        const colleges = await searchColleges(value);
-        setSuggestions(colleges);
-        setIsOpen(colleges.length > 0);
-      } else {
-        setSuggestions([]);
-        setIsOpen(false);
-      }
-    };
-
-    fetchSuggestions();
-  }, [value]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setSuggestions([]);
       }
     };
 
@@ -41,62 +26,113 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex(prev => 
-        prev < suggestions.length - 1 ? prev + 1 : prev
-      );
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex(prev => prev > -1 ? prev - 1 : -1);
-    } else if (e.key === 'Enter') {
-      if (selectedIndex > -1) {
-        onChange(suggestions[selectedIndex]);
-        setIsOpen(false);
-      } else {
-        onSubmit();
-      }
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    onChange(input);
+
+    if (input.length > 0) {
+      const filtered = colleges.filter(college =>
+        college.toLowerCase().includes(input.toLowerCase())
+      ).slice(0, 5);
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && value.trim()) {
+      onSubmit();
+      setSuggestions([]);
     }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setIsOpen(false);
-    setSuggestions([]);
     onChange(suggestion);
+    setSuggestions([]);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   return (
-    <div className="relative" ref={wrapperRef}>
-      <Input
-        type="text"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value);
-          setSelectedIndex(-1);
-          if (suggestions.includes(e.target.value)) {
-            setIsOpen(false);
-          }
-        }}
-        onKeyDown={handleKeyDown}
-        placeholder="Enter college name"
-        className={`text-center text-black dark:text-white ${className}`}
-        autoFocus
-      />
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
+    <div className={`relative ${className}`}>
+      <div className={`
+        relative group
+        transition-all duration-300
+        ${isFocused ? 'ring-2 ring-primary-green/30 ring-offset-2 ring-offset-background/10' : ''}
+      `}>
+        {/* Search Icon */}
+        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <Search className="w-4 h-4" />
+        </div>
+
+        {/* Main Input */}
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder="Type a college name..."
+          className={`
+            w-full h-12
+            pl-11 pr-4
+            text-base text-gray-100
+            bg-surface/40 backdrop-blur-md
+            border border-gray-700/50
+            rounded-xl
+            placeholder:text-gray-500
+            transition-all duration-300
+            focus:outline-none
+            focus:border-primary-green/50
+            focus:bg-surface/60
+            hover:bg-surface/50
+            hover:border-gray-600/50
+          `}
+          spellCheck={false}
+          autoComplete="off"
+        />
+
+        {/* Focus/Hover Effects */}
+        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary-green/5 to-secondary-green/5 blur-sm" />
+        </div>
+      </div>
+
+      {/* Suggestions Dropdown */}
+      {suggestions.length > 0 && (
+        <div
+          ref={suggestionsRef}
+          className="
+            absolute z-50 w-full mt-2
+            bg-surface/90 backdrop-blur-md
+            border border-gray-700/50
+            rounded-xl
+            shadow-xl shadow-black/20
+            overflow-hidden
+          "
+        >
           {suggestions.map((suggestion, index) => (
-            <div
+            <button
               key={suggestion}
-              className={`px-4 py-2 cursor-pointer text-black dark:text-white ${
-                index === selectedIndex ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
               onClick={() => handleSuggestionClick(suggestion)}
+              className={`
+                w-full px-4 py-3
+                text-left text-base text-gray-100
+                transition-all duration-200
+                hover:bg-primary-green/10
+                hover:text-primary-green
+                focus:outline-none
+                focus:bg-primary-green/10
+                focus:text-primary-green
+                ${index !== suggestions.length - 1 ? 'border-b border-gray-700/50' : ''}
+              `}
             >
               {suggestion}
-            </div>
+            </button>
           ))}
         </div>
       )}

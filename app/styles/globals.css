@@ -72,31 +72,40 @@
 @layer components {
   /* Button Styles */
   .btn-primary {
-    @apply bg-primary-green text-background font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200 inline-flex items-center justify-center;
+    @apply relative flex items-center justify-center gap-2 rounded-full backdrop-blur-md 
+           bg-surface/30 border border-gray-700/30 text-gray-100 font-medium 
+           transition-all duration-300 overflow-hidden
+           hover:bg-primary-green/20 hover:border-primary-green/40 
+           hover:shadow-lg hover:shadow-primary-green/20
+           focus:outline-none focus:ring-2 focus:ring-primary-green/50 focus:ring-offset-2 focus:ring-offset-background;
   }
   
   .btn-primary:hover {
-    @apply bg-secondary-green shadow-lg shadow-green-glow;
+    @apply bg-primary-green/20 border-primary-green/40 shadow-lg shadow-primary-green/20;
   }
   
   .btn-primary:active {
-    @apply transform scale-[0.98];
+    @apply transform scale-[0.98] bg-primary-green/30;
   }
   
   .btn-secondary {
-    @apply bg-transparent text-primary-green border border-primary-green font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200 inline-flex items-center justify-center;
+    @apply relative flex items-center justify-center gap-2 rounded-full backdrop-blur-md 
+           bg-surface/20 border border-gray-700/30 text-gray-300 font-medium 
+           transition-all duration-300 overflow-hidden
+           hover:bg-surface/40 hover:text-primary-green hover:border-primary-green/30
+           focus:outline-none focus:ring-2 focus:ring-primary-green/30 focus:ring-offset-2 focus:ring-offset-background;
   }
   
   .btn-secondary:hover {
-    @apply bg-primary-green/10 border-secondary-green text-secondary-green shadow-lg shadow-green-glow;
+    @apply bg-surface/40 text-primary-green border-primary-green/30;
   }
   
   .btn-secondary:active {
-    @apply transform scale-[0.98];
+    @apply transform scale-[0.98] bg-surface/50;
   }
   
   .btn-disabled {
-    @apply bg-gray-700 text-gray-500 cursor-not-allowed;
+    @apply bg-gray-700 text-gray-500 cursor-not-allowed opacity-50;
   }
   
   /* Card Styles */

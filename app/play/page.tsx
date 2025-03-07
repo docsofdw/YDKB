@@ -352,18 +352,23 @@ export default function PlayPage() {
                     </div>
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row gap-4">
-                    <Button 
+                    <button
                       onClick={handleStartQuiz}
-                      className="btn-primary w-full"
+                      className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
                     >
-                      <Play className="w-4 h-4 mr-2" />
-                      Play Now
-                    </Button>
+                      <Play className="w-4 h-4" />
+                      <span>Play Now</span>
+                      <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
+                    </button>
+                    
                     <Link href="/archive" className="w-full sm:w-auto">
-                      <Button variant="outline" className="btn-secondary w-full">
-                        <History className="w-4 h-4 mr-2" />
-                        View Archive
-                      </Button>
+                      <button
+                        className="glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/20 border border-gray-700/30 text-gray-300 font-medium transition-all duration-300 hover:bg-surface/40 hover:text-primary-green hover:border-primary-green/30"
+                      >
+                        <History className="w-4 h-4" />
+                        <span>View Archive</span>
+                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/5 to-secondary-green/5 blur"></div>
+                      </button>
                     </Link>
                   </CardFooter>
                 </Card>
@@ -395,18 +400,15 @@ export default function PlayPage() {
                     </span>
                   </CardTitle>
                   {quizState === 'easy' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => {
                         if (timer) clearInterval(timer);
                         setQuizState('intro');
                       }}
-                      className="text-gray-300 hover:text-primary-green"
+                      className="text-gray-300 hover:text-primary-green p-2 rounded-full transition-colors duration-200"
                     >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </Button>
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </CardHeader>
@@ -423,23 +425,30 @@ export default function PlayPage() {
                       value={userAnswer}
                       onChange={setUserAnswer}
                       onSubmit={handleSubmitAnswer}
-                      className="text-center"
+                      className="relative glass-input-container"
                     />
                   </div>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button 
+                <button 
                   onClick={handleSubmitAnswer}
-                  className={`w-full btn-primary ${
-                    quizState === 'easy' ? 'bg-success hover:bg-success/90' :
-                    quizState === 'hard' ? 'bg-warning hover:bg-warning/90' :
-                    'bg-info hover:bg-info/90'
+                  className={`glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border text-gray-100 font-medium transition-all duration-300 ${
+                    !userAnswer.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+                  } ${
+                    quizState === 'easy' ? 'bg-success/20 border-success/30 hover:bg-success/30 hover:border-success/50 hover:shadow-success/20' :
+                    quizState === 'hard' ? 'bg-warning/20 border-warning/30 hover:bg-warning/30 hover:border-warning/50 hover:shadow-warning/20' :
+                    'bg-info/20 border-info/30 hover:bg-info/30 hover:border-info/50 hover:shadow-info/20'
                   }`}
                   disabled={!userAnswer.trim()}
                 >
-                  Submit Answer
-                </Button>
+                  <span>Submit Answer</span>
+                  <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
+                    quizState === 'easy' ? 'bg-gradient-to-r from-success/10 to-success/5' :
+                    quizState === 'hard' ? 'bg-gradient-to-r from-warning/10 to-warning/5' :
+                    'bg-gradient-to-r from-info/10 to-info/5'
+                  }`}></div>
+                </button>
               </CardFooter>
             </Card>
           )}
@@ -519,19 +528,24 @@ export default function PlayPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col sm:flex-row gap-4">
-                <Button 
+                <button
                   onClick={() => {
                     setQuizState('intro');
                     setQuizProgress(INITIAL_QUIZ_PROGRESS);
                   }}
-                  className="btn-primary w-full"
+                  className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
                 >
-                  Play Again
-                </Button>
+                  <span>Play Again</span>
+                  <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
+                </button>
+                
                 <Link href="/leaderboard" className="w-full sm:w-auto">
-                  <Button variant="outline" className="btn-secondary w-full">
-                    View Leaderboard
-                  </Button>
+                  <button
+                    className="glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/20 border border-gray-700/30 text-gray-300 font-medium transition-all duration-300 hover:bg-surface/40 hover:text-primary-green hover:border-primary-green/30"
+                  >
+                    <span>View Leaderboard</span>
+                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/5 to-secondary-green/5 blur"></div>
+                  </button>
                 </Link>
               </CardFooter>
             </Card>
@@ -559,12 +573,13 @@ export default function PlayPage() {
         <div className="text-center p-8 max-w-md mx-auto glass rounded-xl">
           <h1 className="text-2xl font-bold mb-4 text-gray-100">Sign In Required</h1>
           <p className="mb-6 text-gray-300">Please sign in to play the daily NFL College Guessing Game.</p>
-          <Button
+          <button
             onClick={() => window.location.href = '/sign-in'}
-            className="btn-primary"
+            className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
           >
-            Sign In
-          </Button>
+            <span>Sign In</span>
+            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
+          </button>
         </div>
       </motion.div>
     );
