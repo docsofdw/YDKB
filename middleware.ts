@@ -12,7 +12,8 @@ const publicPaths = [
   "/api/generate-image",
   "/api/check-generation",
   "/test-generation",
-  "/api/admin/generate-challenge-images"
+  "/api/admin/generate-challenge-images",
+  "/api/admin/generate-future-images"
 ];
 
 // Create a route matcher for public paths

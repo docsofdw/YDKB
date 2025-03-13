@@ -14,10 +14,24 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const [mouseDownOnSuggestion, setMouseDownOnSuggestion] = useState(false);
+
+  // Update suggestions when value changes
+  useEffect(() => {
+    if (value.length > 0) {
+      const filtered = colleges.filter(college =>
+        college.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 5);
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) && 
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
         setSuggestions([]);
       }
     };
@@ -44,15 +58,67 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
     if (e.key === 'Enter' && value.trim()) {
       onSubmit();
       setSuggestions([]);
+    } else if (e.key === 'Escape') {
+      setSuggestions([]);
+    } else if (e.key === 'ArrowDown' && suggestions.length > 0) {
+      // Focus the first suggestion
+      const suggestionElements = suggestionsRef.current?.querySelectorAll('button');
+      if (suggestionElements && suggestionElements.length > 0) {
+        (suggestionElements[0] as HTMLButtonElement).focus();
+      }
+    }
+  };
+
+  const handleSuggestionKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const suggestionElements = suggestionsRef.current?.querySelectorAll('button');
+      if (suggestionElements && index < suggestionElements.length - 1) {
+        (suggestionElements[index + 1] as HTMLButtonElement).focus();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const suggestionElements = suggestionsRef.current?.querySelectorAll('button');
+      if (index === 0) {
+        inputRef.current?.focus();
+      } else if (suggestionElements && index > 0) {
+        (suggestionElements[index - 1] as HTMLButtonElement).focus();
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setSuggestions([]);
+      inputRef.current?.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const suggestion = suggestions[index];
+      handleSuggestionClick(suggestion);
     }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    // Immediately update the value and close the dropdown
     onChange(suggestion);
     setSuggestions([]);
+    
+    // Focus the input after selection
     if (inputRef.current) {
       inputRef.current.focus();
     }
+    
+    // Submit the answer after a short delay to allow state to update
+    setTimeout(() => {
+      onSubmit();
+    }, 100);
+  };
+
+  const handleSuggestionMouseDown = () => {
+    // Set flag to prevent blur from closing dropdown before click is processed
+    setMouseDownOnSuggestion(true);
+  };
+
+  const handleSuggestionMouseUp = () => {
+    // Reset flag after click is processed
+    setMouseDownOnSuggestion(false);
   };
 
   return (
@@ -74,8 +140,25 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={() => {
+            setIsFocused(true);
+            // Show suggestions if there's text
+            if (value.length > 0) {
+              const filtered = colleges.filter(college =>
+                college.toLowerCase().includes(value.toLowerCase())
+              ).slice(0, 5);
+              setSuggestions(filtered);
+            }
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            // Only close suggestions if not clicking on a suggestion
+            if (!mouseDownOnSuggestion) {
+              setTimeout(() => {
+                setSuggestions([]);
+              }, 150); // Small delay to allow click to register
+            }
+          }}
           placeholder="Type a college name..."
           className={`
             w-full h-12
@@ -119,6 +202,9 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
             <button
               key={suggestion}
               onClick={() => handleSuggestionClick(suggestion)}
+              onMouseDown={handleSuggestionMouseDown}
+              onMouseUp={handleSuggestionMouseUp}
+              onKeyDown={(e) => handleSuggestionKeyDown(e, index)}
               className={`
                 w-full px-4 py-3
                 text-left text-base text-gray-100

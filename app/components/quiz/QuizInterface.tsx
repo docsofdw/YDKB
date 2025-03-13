@@ -236,6 +236,26 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
         >
           {currentQuestionIndex < totalQuestions - 1 ? 'Next Question' : 'Finish Quiz'}
         </Button>
+        <Button 
+          onClick={() => {
+            // Mark this question as incorrect
+            const updatedAnswers = { ...answers };
+            updatedAnswers[currentQuestion.id] = 'skip';
+            setAnswers(updatedAnswers);
+            
+            // Move to next question or complete quiz
+            if (currentQuestionIndex < totalQuestions - 1) {
+              setCurrentQuestionIndex(currentQuestionIndex + 1);
+              setSelectedOptionId(null);
+            } else {
+              handleQuizComplete();
+            }
+          }}
+          variant="outline"
+          className="w-full mt-2"
+        >
+          I don't know ball
+        </Button>
       </CardFooter>
     </Card>
   );

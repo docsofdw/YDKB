@@ -361,6 +361,42 @@ export default function OnDemandQuiz() {
         >
           Submit Answer
         </button>
+        
+        <button
+          onClick={() => {
+            const now = Date.now();
+            const questionTimeTaken = questionStartTime ? (now - questionStartTime) / 1000 : 0;
+            
+            // Get current question
+            const currentQuestion = questions[currentQuestionIndex];
+            
+            // Update question with user's answer
+            const updatedQuestions = [...questions];
+            updatedQuestions[currentQuestionIndex] = {
+              ...currentQuestion,
+              userAnswer: "I don't know",
+              isCorrect: false,
+              timeTaken: questionTimeTaken,
+            };
+            
+            setQuestions(updatedQuestions);
+            
+            // Update total time
+            setTotalTimeTaken(totalTimeTaken + questionTimeTaken);
+            
+            // Move to next question or complete quiz
+            if (currentQuestionIndex < questions.length - 1) {
+              setCurrentQuestionIndex(currentQuestionIndex + 1);
+              setUserAnswer('');
+              setQuestionStartTime(now);
+            } else {
+              completeQuiz(updatedQuestions, score);
+            }
+          }}
+          className="w-full mt-2 px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded hover:bg-gray-100"
+        >
+          I don't know ball
+        </button>
       </div>
     </div>
   );

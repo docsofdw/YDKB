@@ -9,6 +9,7 @@ import { Progress } from '@/app/components/ui/progress';
 import { Clock, Trophy, AlertCircle } from 'lucide-react';
 import { getTodaysChallengePlayer } from '@/app/lib/supabase-client';
 import { saveUserGameHistory, saveUserQuestionHistory } from '@/app/lib/user-actions';
+import PlayerImage from '@/app/components/PlayerImage';
 
 type QuizState = 'loading' | 'ready' | 'in-progress' | 'completed' | 'error';
 
@@ -194,6 +195,13 @@ export default function DailyQuiz() {
             </div>
             <p>Time: {formatTime(timeElapsed)}</p>
             <p>Correct Answer: {player.name}</p>
+            <div className="mt-2">
+              <PlayerImage 
+                playerName={player.name} 
+                size={128} 
+                className="h-32 w-32 object-cover rounded-lg shadow-lg mx-auto"
+              />
+            </div>
             <p>Your Answer: {userAnswer}</p>
           </div>
         </CardContent>
@@ -229,15 +237,13 @@ export default function DailyQuiz() {
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-center">Who is this NFL player?</h2>
             
-            {player.image_url && (
-              <div className="flex justify-center">
-                <img 
-                  src={player.image_url} 
-                  alt="NFL Player" 
-                  className="h-48 w-48 object-cover rounded-lg shadow-lg"
-                />
-              </div>
-            )}
+            <div className="flex justify-center">
+              <PlayerImage 
+                playerName={player.name} 
+                size={192} 
+                className="h-48 w-48 object-cover rounded-lg shadow-lg"
+              />
+            </div>
             
             <div className="flex flex-col gap-2">
               <Input
@@ -254,6 +260,43 @@ export default function DailyQuiz() {
                 disabled={!userAnswer.trim()}
               >
                 Submit Answer
+              </Button>
+              <Button 
+                onClick={() => {
+                  setUserAnswer("I don't know");
+                  setIsCorrect(false);
+                  setQuizState('completed');
+                  
+                  if (isSignedIn) {
+                    try {
+                      const gameData = {
+                        score: 0,
+                        correct_answers: 0,
+                        total_questions: 1,
+                        time_taken: timeElapsed,
+                        difficulty: 'daily',
+                      };
+                      
+                      saveUserGameHistory(gameData).then(gameResult => {
+                        if (gameResult.success && gameResult.gameId) {
+                          saveUserQuestionHistory(gameResult.gameId, [{
+                            player_id: player.id,
+                            answered_correctly: false,
+                            time_taken: timeElapsed,
+                          }]);
+                        }
+                      }).catch(err => {
+                        console.error('Failed to save game history:', err);
+                      });
+                    } catch (err) {
+                      console.error('Failed to save game history:', err);
+                    }
+                  }
+                }}
+                variant="outline"
+                className="mt-2"
+              >
+                I don't know ball
               </Button>
             </div>
           </div>

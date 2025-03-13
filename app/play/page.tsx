@@ -12,6 +12,7 @@ import { Progress } from "@/app/components/ui/progress";
 import { getTodaysChallengePlayer, type Player } from '@/app/lib/supabase-client';
 import { saveUserGameHistory, saveUserQuestionHistory } from '@/app/lib/user-actions';
 import { CollegeAutocomplete } from "@/app/components/CollegeAutocomplete";
+import PlayerImage from '@/app/components/PlayerImage';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -41,6 +42,7 @@ interface QuizProgress {
   totalQuestions: number;
   elapsedTime: number;
   score: number;
+  gameId?: string;
   answers: {
     easy?: string;
     hard?: string;
@@ -79,37 +81,6 @@ const TIME_LIMITS = {
   hard: 180, // 3 minutes in seconds
   hof: 240,  // 4 minutes in seconds
 };
-
-function PlayerImage({ currentPlayer }: { currentPlayer?: Player }) {
-  if (!currentPlayer) {
-    return (
-      <div className="mb-6 p-4 bg-surface rounded-lg border border-gray-700">
-        <p className="text-gray-500">Loading player data...</p>
-      </div>
-    );
-  }
-  
-  if (!currentPlayer.image_url) {
-    return (
-      <div className="mb-6 p-4 bg-surface rounded-lg border border-gray-700">
-        <p className="text-gray-500">No image available for {currentPlayer.name}</p>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="mb-6">
-      <img 
-        src={currentPlayer.image_url}
-        alt="NFL Player"
-        className="mx-auto h-48 w-48 object-cover rounded-xl shadow-lg border border-gray-700"
-        onError={(e) => {
-          e.currentTarget.src = 'https://via.placeholder.com/200x200?text=No+Image';
-        }}
-      />
-    </div>
-  );
-}
 
 export default function PlayPage() {
   const { isSignedIn, isLoaded } = useUser();
@@ -192,8 +163,56 @@ export default function PlayPage() {
     const currentPlayer = quizProgress.players[currentDifficulty];
     const timeTaken = quizProgress.elapsedTime;
     
-    // Check answer against college name
-    const isCorrect = userAnswer.trim().toLowerCase() === currentPlayer?.college.toLowerCase();
+    // Normalize college names for comparison
+    const normalizeCollegeName = (name: string): string => {
+      return name
+        .trim()
+        .toLowerCase()
+        // Handle common abbreviations
+        .replace(/^ut\b/, 'texas')
+        .replace(/^uf\b/, 'florida')
+        .replace(/^um\b/, 'michigan')
+        .replace(/^uga\b/, 'georgia')
+        .replace(/^osu\b/, 'ohio state')
+        .replace(/^psu\b/, 'penn state')
+        .replace(/^msu\b/, 'michigan state')
+        .replace(/^unc\b/, 'north carolina')
+        .replace(/^usc\b/, 'southern california')
+        .replace(/^ucla\b/, 'california los angeles')
+        // Remove common suffixes and prefixes
+        .replace(/university of /i, '')
+        .replace(/^the university of /i, '')
+        .replace(/ university/i, '')
+        .replace(/state university/i, 'state')
+        .replace(/ college/i, '')
+        // Handle specific cases
+        .replace(/^ole miss$/i, 'mississippi')
+        .replace(/^uva$/i, 'virginia')
+        .replace(/^a&m/i, 'am')
+        // Remove special characters
+        .replace(/[^\w\s]/g, '')
+        // Remove extra spaces
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+    
+    const userCollegeName = normalizeCollegeName(userAnswer);
+    const correctCollegeName = normalizeCollegeName(currentPlayer?.college || '');
+    
+    // Check if the normalized names match or if the user's answer contains the correct answer
+    // or if the correct answer contains the user's answer
+    const isCorrect = 
+      userCollegeName === correctCollegeName || 
+      (userCollegeName.length > 3 && correctCollegeName.includes(userCollegeName)) ||
+      (correctCollegeName.length > 3 && userCollegeName.includes(correctCollegeName));
+    
+    console.log('Answer check:', {
+      userAnswer: userAnswer,
+      correctAnswer: currentPlayer?.college,
+      userNormalized: userCollegeName,
+      correctNormalized: correctCollegeName,
+      isCorrect
+    });
     
     // Update progress
     setQuizProgress(prev => ({
@@ -285,273 +304,349 @@ export default function PlayPage() {
   };
 
   const renderQuizContent = () => {
-    if (isLoading) {
-      return (
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
+    const currentPlayer = quizProgress.players[quizState as keyof typeof quizProgress.players];
+    const timeLimit = TIME_LIMITS[quizState as keyof typeof TIME_LIMITS] || 0;
+    const timeRemaining = Math.max(0, timeLimit - quizProgress.elapsedTime);
+    const timePercentage = (timeRemaining / timeLimit) * 100;
 
     return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={quizState}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {quizState === 'intro' && (
-            <>
-              <motion.div variants={itemVariants} className="text-center mb-12">
-                <h1 className="text-4xl font-bold mb-4 gradient-text">Daily Challenge</h1>
-                <p className="text-gray-300 text-lg">Test your NFL knowledge with today's three questions</p>
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <Card className="glass hover:shadow-xl transition-all duration-300">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-primary-green">
-                      <CalendarDays className="h-5 w-5" />
-                      Today's Challenge
-                    </CardTitle>
-                    <CardDescription className="text-gray-300">Three questions of increasing difficulty</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-300" />
-                          <span className="text-sm text-gray-300">9 min total</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Trophy className="h-4 w-4 text-gray-300" />
-                          <span className="text-sm text-gray-300">3 questions</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-2 h-2 rounded-full bg-success"></div>
-                          <span className="text-gray-300">Easy Question (2 min)</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-2 h-2 rounded-full bg-warning"></div>
-                          <span className="text-gray-300">Hard Question (3 min)</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="w-2 h-2 rounded-full bg-info"></div>
-                          <span className="text-gray-300">Hall of Fame Question (4 min)</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      onClick={handleStartQuiz}
-                      className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>Play Now</span>
-                      <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
-                    </button>
-                    
-                    <Link href="/archive" className="w-full sm:w-auto">
-                      <button
-                        className="glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/20 border border-gray-700/30 text-gray-300 font-medium transition-all duration-300 hover:bg-surface/40 hover:text-primary-green hover:border-primary-green/30"
-                      >
-                        <History className="w-4 h-4" />
-                        <span>View Archive</span>
-                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/5 to-secondary-green/5 blur"></div>
-                      </button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-
-              <motion.div 
-                variants={itemVariants}
-                className="mt-8 text-center"
+      <Card className="w-full glass">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${
+                quizState === 'easy' ? 'bg-success' :
+                quizState === 'hard' ? 'bg-warning' : 'bg-info'
+              }`}></div>
+              <span className="text-gray-100">
+                {quizState === 'easy' ? 'Easy Question' :
+                 quizState === 'hard' ? 'Hard Question' : 'Hall of Fame Question'}
+              </span>
+            </CardTitle>
+            {quizState === 'easy' && (
+              <button
+                onClick={() => {
+                  if (timer) clearInterval(timer);
+                  setQuizState('intro');
+                }}
+                className="text-gray-300 hover:text-primary-green p-2 rounded-full transition-colors duration-200"
               >
-                <p className="text-sm text-gray-500">
-                  Questions refresh daily at midnight EST
-                </p>
-              </motion.div>
-            </>
-          )}
-
-          {(quizState === 'easy' || quizState === 'hard' || quizState === 'hof') && (
-            <Card className="w-full glass">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${
-                      quizState === 'easy' ? 'bg-success' :
-                      quizState === 'hard' ? 'bg-warning' : 'bg-info'
-                    }`}></div>
-                    <span className="text-gray-100">
-                      {quizState === 'easy' ? 'Easy Question' :
-                       quizState === 'hard' ? 'Hard Question' : 'Hall of Fame Question'}
-                    </span>
-                  </CardTitle>
-                  {quizState === 'easy' && (
-                    <button
-                      onClick={() => {
-                        if (timer) clearInterval(timer);
-                        setQuizState('intro');
-                      }}
-                      className="text-gray-300 hover:text-primary-green p-2 rounded-full transition-colors duration-200"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
-                  <h2 className="text-xl font-semibold mb-6 text-gray-100">
-                    {quizProgress.players[quizState]?.name ? 
-                      `Where did ${quizProgress.players[quizState]?.name} go to college?` :
-                      'Loading question...'}
-                  </h2>
-                  <PlayerImage currentPlayer={quizProgress.players[quizState]} />
-                  <div className="max-w-sm mx-auto">
-                    <CollegeAutocomplete
-                      value={userAnswer}
-                      onChange={setUserAnswer}
-                      onSubmit={handleSubmitAnswer}
-                      className="relative glass-input-container"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <button 
-                  onClick={handleSubmitAnswer}
-                  className={`glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border text-gray-100 font-medium transition-all duration-300 ${
-                    !userAnswer.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
-                  } ${
-                    quizState === 'easy' ? 'bg-success/20 border-success/30 hover:bg-success/30 hover:border-success/50 hover:shadow-success/20' :
-                    quizState === 'hard' ? 'bg-warning/20 border-warning/30 hover:bg-warning/30 hover:border-warning/50 hover:shadow-warning/20' :
-                    'bg-info/20 border-info/30 hover:bg-info/30 hover:border-info/50 hover:shadow-info/20'
-                  }`}
-                  disabled={!userAnswer.trim()}
-                >
-                  <span>Submit Answer</span>
-                  <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
-                    quizState === 'easy' ? 'bg-gradient-to-r from-success/10 to-success/5' :
-                    quizState === 'hard' ? 'bg-gradient-to-r from-warning/10 to-warning/5' :
-                    'bg-gradient-to-r from-info/10 to-info/5'
-                  }`}></div>
-                </button>
-              </CardFooter>
-            </Card>
-          )}
-
-          {quizState === 'summary' && (
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle className="text-primary-green">Quiz Complete!</CardTitle>
-                <CardDescription className="text-gray-300">Here's how you did</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <div className="text-6xl font-bold mb-2 gradient-text">
-                      {Math.round((quizProgress.score / 3) * 100)}%
-                    </div>
-                    <p className="text-xl mb-1 text-gray-100">
-                      You got {quizProgress.score} out of 3 questions correct
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Total time: {formatTime(Object.values(quizProgress.timeTaken).reduce((a, b) => a + (b || 0), 0))}
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    {(['easy', 'hard', 'hof'] as const).map((difficulty) => {
-                      const player = quizProgress.players[difficulty];
-                      const answer = quizProgress.answers[difficulty];
-                      const isCorrect = quizProgress.results[difficulty];
-                      const timeTaken = quizProgress.timeTaken[difficulty];
-
-                      return (
-                        <div 
-                          key={difficulty}
-                          className={`p-4 rounded-lg glass ${
-                            isCorrect ? 'border-success/20' : 'border-error/20'
-                          }`}
-                        >
-                          <div className="flex items-start gap-4">
-                            {player?.image_url && (
-                              <img 
-                                src={player.image_url}
-                                alt={player.name}
-                                className="w-16 h-16 object-cover rounded-lg border border-gray-700"
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className={`w-2 h-2 rounded-full ${
-                                  difficulty === 'easy' ? 'bg-success' :
-                                  difficulty === 'hard' ? 'bg-warning' : 'bg-info'
-                                }`} />
-                                <span className="font-medium text-gray-100">
-                                  {difficulty === 'easy' ? 'Easy' :
-                                   difficulty === 'hard' ? 'Hard' : 'Hall of Fame'} Question
-                                </span>
-                              </div>
-                              <p className="text-sm mb-1 text-gray-300">
-                                Your answer: <span className={isCorrect ? 'text-success' : 'text-error'}>
-                                  {answer}
-                                </span>
-                              </p>
-                              {!isCorrect && player && (
-                                <p className="text-sm text-success">
-                                  Correct answer: {player.college}
-                                </p>
-                              )}
-                              <p className="text-xs text-gray-500">
-                                Time taken: {formatTime(timeTaken || 0)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => {
-                    setQuizState('intro');
-                    setQuizProgress(INITIAL_QUIZ_PROGRESS);
-                  }}
-                  className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
-                >
-                  <span>Play Again</span>
-                  <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
-                </button>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-6 text-gray-100">
+              {currentPlayer?.name ? 
+                `Where did ${currentPlayer.name} go to college?` :
+                'Loading question...'}
+            </h2>
+            <div className="mb-6">
+              <PlayerImage 
+                playerName={currentPlayer?.name || ''} 
+                size={192} 
+                className="mx-auto h-48 w-48 object-cover rounded-xl shadow-lg border border-gray-700"
+              />
+            </div>
+            <div className="max-w-sm mx-auto">
+              <CollegeAutocomplete
+                value={userAnswer}
+                onChange={setUserAnswer}
+                onSubmit={handleSubmitAnswer}
+                className="relative glass-input-container"
+              />
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <div className="flex flex-col w-full gap-2">
+            <button 
+              onClick={handleSubmitAnswer}
+              className={`glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border text-gray-100 font-medium transition-all duration-300 ${
+                !userAnswer.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+              } ${
+                quizState === 'easy' ? 'bg-success/20 border-success/30 hover:bg-success/30 hover:border-success/50 hover:shadow-success/20' :
+                quizState === 'hard' ? 'bg-warning/20 border-warning/30 hover:bg-warning/30 hover:border-warning/50 hover:shadow-warning/20' :
+                'bg-info/20 border-info/30 hover:bg-info/30 hover:border-info/50 hover:shadow-info/20'
+              }`}
+              disabled={!userAnswer.trim()}
+            >
+              <span>Submit Answer</span>
+              <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
+                quizState === 'easy' ? 'bg-gradient-to-r from-success/10 to-success/5' :
+                quizState === 'hard' ? 'bg-gradient-to-r from-warning/10 to-warning/5' :
+                'bg-gradient-to-r from-info/10 to-info/5'
+              }`}></div>
+            </button>
+            
+            <button 
+              onClick={() => {
+                // Set a default "I don't know" answer
+                setUserAnswer("I don't know");
                 
-                <Link href="/leaderboard" className="w-full sm:w-auto">
-                  <button
-                    className="glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/20 border border-gray-700/30 text-gray-300 font-medium transition-all duration-300 hover:bg-surface/40 hover:text-primary-green hover:border-primary-green/30"
+                // Handle the submission as incorrect
+                const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
+                const currentPlayer = quizProgress.players[currentDifficulty];
+                const timeTaken = quizProgress.elapsedTime;
+                
+                // Update quiz progress
+                setQuizProgress(prev => {
+                  const updatedResults = { ...prev.results };
+                  updatedResults[currentDifficulty] = false;
+                  
+                  const updatedAnswers = { ...prev.answers };
+                  updatedAnswers[currentDifficulty] = "I don't know";
+                  
+                  const updatedTimeTaken = { ...prev.timeTaken };
+                  updatedTimeTaken[currentDifficulty] = timeTaken;
+                  
+                  return {
+                    ...prev,
+                    results: updatedResults,
+                    answers: updatedAnswers,
+                    timeTaken: updatedTimeTaken
+                  };
+                });
+                
+                // Save the result to user history
+                if (isSignedIn && currentPlayer) {
+                  saveUserQuestionHistory(quizProgress.gameId || '', [{
+                    game_id: quizProgress.gameId || '',
+                    player_id: currentPlayer.id,
+                    answered_correctly: false,
+                    time_taken: timeTaken,
+                  }]).catch(console.error);
+                }
+                
+                // Move to the next difficulty or summary
+                if (timer) clearInterval(timer);
+                
+                if (currentDifficulty === 'easy') {
+                  setQuizState('hard');
+                  setUserAnswer(''); // Reset user answer when moving to next question
+                  startTimer();
+                } else if (currentDifficulty === 'hard') {
+                  setQuizState('hof');
+                  setUserAnswer(''); // Reset user answer when moving to next question
+                  startTimer();
+                } else {
+                  // Complete the quiz and show summary
+                  setQuizState('summary');
+                  
+                  // Save final game history
+                  if (isSignedIn) {
+                    const correctCount = Object.values(quizProgress.results).filter(Boolean).length;
+                    saveUserGameHistory({
+                      game_date: new Date().toISOString(),
+                      score: correctCount,
+                      correct_answers: correctCount,
+                      total_questions: 3,
+                      time_taken: Object.values(quizProgress.timeTaken).reduce((sum, time) => sum + (time || 0), 0),
+                      difficulty: 'mixed',
+                    }).catch(console.error);
+                  }
+                }
+              }}
+              className={`glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border font-medium transition-all duration-300 hover:shadow-lg ${
+                quizState === 'easy' ? 'text-gray-300 border-success/20 hover:border-success/30 hover:text-gray-100' :
+                quizState === 'hard' ? 'text-gray-300 border-warning/20 hover:border-warning/30 hover:text-gray-100' :
+                'text-gray-300 border-info/20 hover:border-info/30 hover:text-gray-100'
+              }`}
+              style={{
+                background: 'rgba(25, 25, 30, 0.5)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              <span>I don't know ball</span>
+              <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
+                quizState === 'easy' ? 'bg-gradient-to-r from-success/5 to-success/0' :
+                quizState === 'hard' ? 'bg-gradient-to-r from-warning/5 to-warning/0' :
+                'bg-gradient-to-r from-info/5 to-info/0'
+              }`}></div>
+            </button>
+          </div>
+        </CardFooter>
+      </Card>
+    );
+  };
+
+  const renderSummary = () => {
+    return (
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle className="text-primary-green">Quiz Complete!</CardTitle>
+          <CardDescription className="text-gray-300">Here's how you did</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="text-6xl font-bold mb-2 gradient-text">
+                {Math.round((quizProgress.score / 3) * 100)}%
+              </div>
+              <p className="text-xl mb-1 text-gray-100">
+                You got {quizProgress.score} out of 3 questions correct
+              </p>
+              <p className="text-sm text-gray-500">
+                Total time: {formatTime(Object.values(quizProgress.timeTaken).reduce((a, b) => a + (b || 0), 0))}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {(['easy', 'hard', 'hof'] as const).map((difficulty) => {
+                const player = quizProgress.players[difficulty];
+                const answer = quizProgress.answers[difficulty];
+                const isCorrect = quizProgress.results[difficulty];
+                const timeTaken = quizProgress.timeTaken[difficulty];
+
+                return (
+                  <div 
+                    key={difficulty}
+                    className={`p-4 rounded-lg glass ${
+                      isCorrect ? 'border-success/20' : 'border-error/20'
+                    }`}
                   >
-                    <span>View Leaderboard</span>
-                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/5 to-secondary-green/5 blur"></div>
-                  </button>
-                </Link>
-              </CardFooter>
-            </Card>
-          )}
+                    <div className="flex items-start gap-4">
+                      {player && (
+                        <PlayerImage 
+                          playerName={player.name} 
+                          size={64} 
+                          className="w-16 h-16 object-cover rounded-lg border border-gray-700"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`w-2 h-2 rounded-full ${
+                            difficulty === 'easy' ? 'bg-success' :
+                            difficulty === 'hard' ? 'bg-warning' : 'bg-info'
+                          }`} />
+                          <span className="font-medium text-gray-100">
+                            {difficulty === 'easy' ? 'Easy' :
+                             difficulty === 'hard' ? 'Hard' : 'Hall of Fame'} Question
+                          </span>
+                        </div>
+                        <p className="text-sm mb-1 text-gray-300">
+                          Your answer: <span className={isCorrect ? 'text-success' : 'text-error'}>
+                            {answer}
+                          </span>
+                        </p>
+                        {!isCorrect && player && (
+                          <p className="text-sm text-success">
+                            Correct answer: {player.college}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          Time taken: {formatTime(timeTaken || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={() => {
+              setQuizState('intro');
+              setQuizProgress(INITIAL_QUIZ_PROGRESS);
+            }}
+            className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
+          >
+            <span>Play Again</span>
+            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
+          </button>
+          
+          <Link href="/leaderboard" className="w-full sm:w-auto">
+            <button
+              className="glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/20 border border-gray-700/30 text-gray-300 font-medium transition-all duration-300 hover:bg-surface/40 hover:text-primary-green hover:border-primary-green/30"
+            >
+              <span>View Leaderboard</span>
+              <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/5 to-secondary-green/5 blur"></div>
+            </button>
+          </Link>
+        </CardFooter>
+      </Card>
+    );
+  };
+
+  const renderIntro = () => {
+    return (
+      <>
+        <motion.div variants={itemVariants} className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 gradient-text">Daily Challenge</h1>
+          <p className="text-gray-300 text-lg">Test your NFL knowledge with today's three questions</p>
         </motion.div>
-      </AnimatePresence>
+
+        <motion.div variants={itemVariants}>
+          <Card className="glass hover:shadow-xl transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-primary-green">
+                <CalendarDays className="h-5 w-5" />
+                Today's Challenge
+              </CardTitle>
+              <CardDescription className="text-gray-300">Three questions of increasing difficulty</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-300" />
+                    <span className="text-sm text-gray-300">9 min total</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-gray-300" />
+                    <span className="text-sm text-gray-300">3 questions</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-success"></div>
+                    <span className="text-gray-300">Easy Question (2 min)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-warning"></div>
+                    <span className="text-gray-300">Hard Question (3 min)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-info"></div>
+                    <span className="text-gray-300">Hall of Fame Question (4 min)</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={handleStartQuiz}
+                className="w-full sm:w-auto"
+                variant="default"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Play Now
+              </Button>
+              
+              <Button variant="outline" asChild className="w-full sm:w-auto">
+                <Link href="/archive">
+                  <History className="w-4 h-4 mr-2" />
+                  View Archive
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </motion.div>
+
+        <motion.div 
+          variants={itemVariants}
+          className="mt-8 text-center"
+        >
+          <p className="text-sm text-gray-500">
+            Questions refresh daily at midnight EST
+          </p>
+        </motion.div>
+      </>
     );
   };
 
@@ -586,14 +681,36 @@ export default function PlayPage() {
   }
 
   return (
-    <motion.div 
-      className="max-w-2xl mx-auto px-4 py-8"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {renderProgressBar()}
-      {renderQuizContent()}
-    </motion.div>
+    <div className="container mx-auto px-4 py-8 max-w-3xl">
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={quizState}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {quizState === 'intro' && renderIntro()}
+              {quizState === 'summary' && renderSummary()}
+              {(quizState === 'easy' || quizState === 'hard' || quizState === 'hof') && renderQuizContent()}
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
+      )}
+    </div>
   );
 } 
