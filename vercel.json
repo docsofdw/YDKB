@@ -1,8 +1,12 @@
 {
-  "crons": [
+  "version": 2,
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "builds": [
     {
-      "path": "/api/cron/daily-challenge",
-      "schedule": "0 0 * * *"
+      "src": "package.json",
+      "use": "@vercel/next"
     }
   ]
 } 
