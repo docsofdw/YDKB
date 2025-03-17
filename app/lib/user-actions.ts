@@ -109,9 +109,9 @@ export async function getFriends() {
     // Format the data
     const formattedData = data.map(item => ({
       relationshipId: item.id,
-      userId: item.users.id,
-      clerkId: item.users.clerk_id,
-      email: item.users.email,
+      userId: item.users?.[0]?.id,
+      clerkId: item.users?.[0]?.clerk_id,
+      email: item.users?.[0]?.email,
       since: item.created_at
     }));
     
@@ -159,9 +159,9 @@ export async function getPendingFriendRequests() {
     // Format the data
     const formattedData = data.map(item => ({
       requestId: item.id,
-      userId: item.users.id,
-      clerkId: item.users.clerk_id,
-      email: item.users.email,
+      userId: item.users?.[0]?.id,
+      clerkId: item.users?.[0]?.clerk_id,
+      email: item.users?.[0]?.email,
       requestedAt: item.created_at
     }));
     
@@ -351,7 +351,7 @@ export async function getFriendsLeaderboard(timeframe = 'all-time', limit = 10) 
     const formattedData = data.map(item => ({
       gameId: item.id,
       userId: item.user_id,
-      email: item.users.email,
+      email: item.users?.[0]?.email,
       score: item.score,
       correctAnswers: item.correct_answers,
       totalQuestions: item.total_questions,
@@ -456,7 +456,7 @@ interface QuestionHistoryData {
 export async function saveUserGameHistory(gameData: GameHistoryData) {
   try {
     const supabase = createSafeClient();
-    const { userId } = auth();
+    const { userId } = await auth();
 
     if (!userId) {
       throw new Error('User not authenticated');
@@ -506,7 +506,7 @@ export async function saveUserGameHistory(gameData: GameHistoryData) {
 export async function saveUserQuestionHistory(gameId: string, questionsData: QuestionHistoryData[]) {
   try {
     const supabase = createSafeClient();
-    const { userId } = auth();
+    const { userId } = await auth();
 
     if (!userId) {
       throw new Error('User not authenticated');

@@ -20,6 +20,8 @@ export const setupJQueryFix = () => {
       each: (fn) => { fn && fn(); return mockJQuery(); },
       length: 0,
       get: () => null,
+      modal: () => mockJQuery(),
+      toast: () => mockJQuery()
     });
     
     // Add array-like methods
@@ -45,12 +47,16 @@ export const cleanupJQueryFix = () => {
   }
 };
 
-// Fix line 20
-if ($('.modal').length) {
-  $('.modal').modal('hide');
-}
+// Handle modal cleanup
+export const handleModalCleanup = () => {
+  if (typeof window !== 'undefined' && window.$ && $('.modal').length) {
+    $('.modal').modal('hide');
+  }
+};
 
-// Fix line 27
-if ($('.toast').length) {
-  $('.toast').toast('hide');
-} 
+// Handle toast cleanup
+export const handleToastCleanup = () => {
+  if (typeof window !== 'undefined' && window.$ && $('.toast').length) {
+    $('.toast').toast('hide');
+  }
+}; 

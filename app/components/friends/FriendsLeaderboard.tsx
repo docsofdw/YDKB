@@ -78,6 +78,7 @@ export default function FriendsLeaderboard() {
         <CardHeader>
           <CardTitle>Friends Leaderboard</CardTitle>
           <Tabs 
+            value={timeFrame}
             defaultValue="daily" 
             className="w-full" 
             onValueChange={(value) => setTimeFrame(value)}

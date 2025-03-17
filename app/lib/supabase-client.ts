@@ -10,6 +10,8 @@ export interface Player {
   team?: string;
 }
 
+export type Difficulty = 'easy' | 'hard' | 'hof';
+
 /**
  * Create a Supabase client for client-side components
  * This is safe to use in client components
@@ -19,6 +21,17 @@ export function createSafeClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookies: {
+        get(name: string) {
+          return document.cookie.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1]
+        },
+        set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean }) {
+          document.cookie = `${name}=${value}; path=${options.path || '/'}; max-age=${options.maxAge || 31536000}`
+        },
+        remove(name: string, options: { path?: string }) {
+          document.cookie = `${name}=; path=${options.path || '/'}; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+        }
+      },
       global: {
         headers: {
           Accept: '*/*',
@@ -97,7 +110,7 @@ async function createChallengeForToday(supabase: SupabaseClient) {
  * @param difficulty - Difficulty level ('easy', 'hard', or 'hof')
  * @returns Player data
  */
-export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Player> {
+export async function getTodaysChallengePlayer(difficulty: Difficulty = 'easy'): Promise<Player> {
   try {
     console.log(`Getting today's challenge player for difficulty: ${difficulty}`);
     const supabase = createSafeClient();
@@ -111,7 +124,13 @@ export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Pla
     console.log('Checking for challenge on date:', today);
     
     // Try to get the challenge for today's date
-    const { data: challenge, error: challengeError } = await supabase
+    const { error: challengeError } = await supabase
+      .from('daily_challenges')
+      .select('*')
+      .eq('challenge_date', today)
+      .single();
+    
+    let { data: challenge } = await supabase
       .from('daily_challenges')
       .select('*')
       .eq('challenge_date', today)
@@ -146,7 +165,7 @@ export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Pla
     console.log('Found/created challenge:', challenge);
     
     // Determine which player ID to use based on difficulty
-    const playerIdMap = {
+    const playerIdMap: Record<Difficulty, number> = {
       easy: challenge.easy_player_id,
       hard: challenge.hard_player_id,
       hof: challenge.hof_player_id
@@ -176,8 +195,8 @@ export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Pla
       return await getRandomPlayer(difficulty);
     }
     
-    if (!player) {
-      console.log('No player found with ID', playerId);
+    if (!player || !isPlayer(player)) {
+      console.log('No valid player found with ID', playerId);
       return await getRandomPlayer(difficulty);
     }
     
@@ -187,6 +206,17 @@ export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Pla
     console.error('Error in getTodaysChallengePlayer:', error);
     return await getRandomPlayer(difficulty);
   }
+}
+
+function isPlayer(obj: any): obj is Player {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    typeof obj.id === 'number' &&
+    typeof obj.name === 'string' &&
+    typeof obj.college === 'string' &&
+    typeof obj.position === 'string'
+  );
 }
 
 /**
@@ -227,7 +257,7 @@ export async function getRandomPlayerExcluding(
     // Get random player
     const { data, error } = await query.limit(1).single();
     
-    if (error || !data) {
+    if (error || !data || !isPlayer(data)) {
       // If no player found with exclusions, try without exclusions
       return await getRandomPlayer(difficulty);
     }
@@ -264,7 +294,7 @@ export async function getRandomPlayer(difficulty: string | null = null): Promise
     // Get random player
     const { data, error } = await query.limit(1).single();
     
-    if (error || !data) {
+    if (error || !data || !isPlayer(data)) {
       return getFallbackPlayer();
     }
     

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { getPlayerImage } from '../../../lib/playerImages'; // Import the new function
 
 // Define types for better TypeScript support
@@ -127,7 +127,10 @@ export function GameContainer() {
             // Cache the URL in the database if we found an image
             if (imageUrl) {
               try {
-                const supabase = createClientComponentClient();
+                const supabase = createBrowserClient(
+                  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                );
                 await supabase
                   .from('players')
                   .update({ image_url: imageUrl })
@@ -157,7 +160,10 @@ export function GameContainer() {
       setLoading(true);
       
       // Create Supabase client
-      const supabase = createClientComponentClient();
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
       
       // Get a random player (using Easy difficulty for simplicity)
       const { data, error } = await supabase

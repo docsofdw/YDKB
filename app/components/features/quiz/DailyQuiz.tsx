@@ -118,6 +118,7 @@ export default function DailyQuiz() {
     if (isSignedIn) {
       try {
         const gameData = {
+          game_date: new Date().toISOString().split('T')[0],
           score: isAnswerCorrect ? 1 : 0,
           correct_answers: isAnswerCorrect ? 1 : 0,
           total_questions: 1,
@@ -129,6 +130,7 @@ export default function DailyQuiz() {
         
         if (gameResult.success && gameResult.gameId) {
           await saveUserQuestionHistory(gameResult.gameId, [{
+            game_id: gameResult.gameId,
             player_id: player.id,
             answered_correctly: isAnswerCorrect,
             time_taken: timeElapsed,
@@ -349,6 +351,7 @@ export default function DailyQuiz() {
                   if (isSignedIn) {
                     try {
                       const gameData = {
+                        game_date: new Date().toISOString().split('T')[0],
                         score: 0,
                         correct_answers: 0,
                         total_questions: 1,
@@ -359,6 +362,7 @@ export default function DailyQuiz() {
                       saveUserGameHistory(gameData).then(gameResult => {
                         if (gameResult.success && gameResult.gameId) {
                           saveUserQuestionHistory(gameResult.gameId, [{
+                            game_id: gameResult.gameId,
                             player_id: player.id,
                             answered_correctly: false,
                             time_taken: timeElapsed,

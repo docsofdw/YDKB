@@ -135,13 +135,15 @@ export default function OnDemandQuiz() {
           total_questions: questions.length,
           time_taken: totalTimeTaken,
           difficulty,
+          game_date: new Date().toISOString().split('T')[0]
         };
         
         const gameResult = await saveUserGameHistory(gameData);
         
         if (gameResult.success && gameResult.gameId) {
           // Save question history
-          const questionData = finalQuestions.map(q => ({
+          const questionData = finalQuestions.map((q, index) => ({
+            game_id: gameResult.gameId,
             player_id: q.playerId,
             answered_correctly: q.isCorrect || false,
             time_taken: q.timeTaken || 0,

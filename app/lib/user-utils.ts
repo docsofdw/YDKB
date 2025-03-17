@@ -48,8 +48,9 @@ function createClient() {
 /**
  * Get the Supabase user ID from a Clerk user ID
  * @returns The Supabase user ID or null if not found
+ * @deprecated Use getSupabaseUserId from user-actions.ts instead
  */
-export async function getSupabaseUserId() {
+export async function getSupabaseUserIdDeprecated() {
   try {
     // Get the Clerk user ID
     const { userId: clerkId } = await auth();
@@ -75,7 +76,7 @@ export async function getSupabaseUserId() {
     
     return data.id;
   } catch (error) {
-    console.error('Error in getSupabaseUserId:', error);
+    console.error('Error in getSupabaseUserIdDeprecated:', error);
     return null;
   }
 }
@@ -84,8 +85,9 @@ export async function getSupabaseUserId() {
  * Save user game history to Supabase
  * @param gameData Game data to save
  * @returns The game ID or null if failed
+ * @deprecated Use saveUserGameHistory from user-actions.ts instead
  */
-export async function saveUserGameHistory(gameData: {
+export async function saveUserGameHistoryDeprecated(gameData: {
   score: number;
   correct_answers: number;
   total_questions: number;
@@ -93,7 +95,7 @@ export async function saveUserGameHistory(gameData: {
   difficulty: string;
 }) {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return null;
@@ -131,8 +133,9 @@ export async function saveUserGameHistory(gameData: {
  * @param gameId Game ID
  * @param questionData Question data to save
  * @returns Success status
+ * @deprecated Use saveUserQuestionHistory from user-actions.ts instead
  */
-export async function saveUserQuestionHistory(
+export async function saveUserQuestionHistoryDeprecated(
   gameId: string,
   questionData: {
     player_id: number;
@@ -141,7 +144,7 @@ export async function saveUserQuestionHistory(
   }[]
 ) {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId || !gameId) {
       return false;
@@ -253,11 +256,12 @@ async function updateUserStats(
 
 /**
  * Get user stats from Supabase
- * @returns User stats or null if not found
+ * @returns Object with success status, message, and data
+ * @deprecated Use getUserStats from user-actions.ts instead
  */
-export async function getUserStats() {
+export async function getUserStatsDeprecated() {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return null;
@@ -287,12 +291,13 @@ export async function getUserStats() {
 
 /**
  * Get user game history from Supabase
- * @param limit Number of games to return
- * @returns Game history or null if not found
+ * @param limit Number of records to return
+ * @returns Object with success status, message, and data
+ * @deprecated Use getUserGameHistory from user-actions.ts instead
  */
-export async function getUserGameHistory(limit = 10) {
+export async function getUserGameHistoryDeprecated(limit = 10) {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return null;
@@ -323,12 +328,13 @@ export async function getUserGameHistory(limit = 10) {
 
 /**
  * Send a friend request to another user
- * @param friendId The ID of the user to send a friend request to
+ * @param friendId Friend's Supabase user ID
  * @returns Object with success status and message
+ * @deprecated Use sendFriendRequest from user-actions.ts instead
  */
-export async function sendFriendRequest(friendId: string) {
+export async function sendFriendRequestDeprecated(friendId: string) {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return { success: false, message: 'User not authenticated' };
@@ -383,13 +389,14 @@ export async function sendFriendRequest(friendId: string) {
 
 /**
  * Respond to a friend request
- * @param requestId The ID of the friend request
+ * @param requestId Friend request ID
  * @param accept Whether to accept or reject the request
  * @returns Object with success status and message
+ * @deprecated Use respondToFriendRequest from user-actions.ts instead
  */
-export async function respondToFriendRequest(requestId: string, accept: boolean) {
+export async function respondToFriendRequestDeprecated(requestId: string, accept: boolean) {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return { success: false, message: 'User not authenticated' };
@@ -434,12 +441,13 @@ export async function respondToFriendRequest(requestId: string, accept: boolean)
 }
 
 /**
- * Get a list of the user's friends
- * @returns Array of friends with their basic info
+ * Get user's friends from Supabase
+ * @returns Object with success status, message, and data
+ * @deprecated Use getFriends from user-actions.ts instead
  */
-export async function getFriends() {
+export async function getFriendsDeprecated() {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return { success: false, data: [], message: 'User not authenticated' };
@@ -494,17 +502,17 @@ export async function getFriends() {
     // Combine and format the results
     const sentFriends = sentRequests.map(req => ({
       relationshipId: req.id,
-      userId: req.friend.id,
-      clerkId: req.friend.clerk_id,
-      email: req.friend.email,
+      userId: req.friend?.[0]?.id,
+      clerkId: req.friend?.[0]?.clerk_id,
+      email: req.friend?.[0]?.email,
       since: req.created_at
     }));
     
     const receivedFriends = receivedRequests.map(req => ({
       relationshipId: req.id,
-      userId: req.friend.id,
-      clerkId: req.friend.clerk_id,
-      email: req.friend.email,
+      userId: req.friend?.[0]?.id,
+      clerkId: req.friend?.[0]?.clerk_id,
+      email: req.friend?.[0]?.email,
       since: req.created_at
     }));
     
@@ -518,12 +526,13 @@ export async function getFriends() {
 }
 
 /**
- * Get pending friend requests for the current user
- * @returns Array of pending friend requests
+ * Get pending friend requests from Supabase
+ * @returns Object with success status, message, and data
+ * @deprecated Use getPendingFriendRequests from user-actions.ts instead
  */
-export async function getPendingFriendRequests() {
+export async function getPendingFriendRequestsDeprecated() {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return { success: false, data: [], message: 'User not authenticated' };
@@ -554,9 +563,9 @@ export async function getPendingFriendRequests() {
     // Format the results
     const formattedRequests = pendingRequests.map(req => ({
       requestId: req.id,
-      userId: req.requester.id,
-      clerkId: req.requester.clerk_id,
-      email: req.requester.email,
+      userId: req.requester?.[0]?.id,
+      clerkId: req.requester?.[0]?.clerk_id,
+      email: req.requester?.[0]?.email,
       requestedAt: req.created_at
     }));
     
@@ -572,14 +581,15 @@ export async function getPendingFriendRequests() {
 }
 
 /**
- * Get the friends leaderboard
- * @param timeframe 'daily', 'weekly', 'monthly', or 'all-time'
- * @param limit Number of results to return
- * @returns Array of friends with their scores
+ * Get friends leaderboard from Supabase
+ * @param timeframe Time frame for the leaderboard (all-time, weekly, monthly)
+ * @param limit Number of records to return
+ * @returns Object with success status, message, and data
+ * @deprecated Use getFriendsLeaderboard from user-actions.ts instead
  */
-export async function getFriendsLeaderboard(timeframe = 'all-time', limit = 10) {
+export async function getFriendsLeaderboardDeprecated(timeframe = 'all-time', limit = 10) {
   try {
-    const userId = await getSupabaseUserId();
+    const userId = await getSupabaseUserIdDeprecated();
     
     if (!userId) {
       return { success: false, data: [], message: 'User not authenticated' };
@@ -588,7 +598,7 @@ export async function getFriendsLeaderboard(timeframe = 'all-time', limit = 10) 
     const supabase = createClient();
     
     // Get the user's friends
-    const friendsResult = await getFriends();
+    const friendsResult = await getFriendsDeprecated();
     
     if (!friendsResult.success || friendsResult.data.length === 0) {
       return { 
@@ -646,14 +656,14 @@ export async function getFriendsLeaderboard(timeframe = 'all-time', limit = 10) 
     // Format the results
     const leaderboard = data.map(entry => ({
       gameId: entry.id,
-      userId: entry.user.id,
-      email: entry.user.email,
+      userId: entry.user?.[0]?.id,
+      email: entry.user?.[0]?.email,
       score: entry.score,
       correctAnswers: entry.correct_answers,
       totalQuestions: entry.total_questions,
       difficulty: entry.difficulty,
       gameDate: entry.game_date,
-      isCurrentUser: entry.user.id === userId
+      isCurrentUser: entry.user?.[0]?.id === userId
     }));
     
     return { 
