@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Trophy, History, Play, ArrowLeft, Timer } from "lucide-react";
+import { CalendarDays, Clock, Trophy, History, Play, ArrowLeft, Timer, Search } from "lucide-react";
 import Link from "next/link";
 import { Progress } from "@/app/components/ui/progress";
 import { getTodaysChallengePlayer, type Player } from '@/app/lib/supabase-client';
@@ -82,14 +82,29 @@ const TIME_LIMITS = {
   hof: 240,  // 4 minutes in seconds
 };
 
+// Define our own interfaces to match what we need
+interface GameData {
+  game_id?: string;
+  game_date: string;
+  score: number;
+  correct_answers: number;
+  total_questions: number;
+  time_taken: number;
+  difficulty: string;
+}
+
 export default function PlayPage() {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
   const [isClient, setIsClient] = useState(false);
   const [quizState, setQuizState] = useState<QuizState>('intro');
   const [quizProgress, setQuizProgress] = useState<QuizProgress>(INITIAL_QUIZ_PROGRESS);
   const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
   const [userAnswer, setUserAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [timeIsUp, setTimeIsUp] = useState(false);
+  
+  // Track if the game has been initialized with a game ID
+  const gameInitialized = useRef(false);
   
   useEffect(() => {
     setIsClient(true);
@@ -98,8 +113,29 @@ export default function PlayPage() {
     };
   }, []);
 
+  // Effect to handle time limit expiration
+  useEffect(() => {
+    if (quizState === 'intro' || quizState === 'summary') return;
+    
+    const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
+    const timeLimit = TIME_LIMITS[currentDifficulty];
+    
+    if (quizProgress.elapsedTime >= timeLimit) {
+      setTimeIsUp(true);
+      if (timer) clearInterval(timer);
+      
+      // Auto-submit "I don't know" after time is up
+      handleTimeUp();
+    }
+    
+    return () => {
+      setTimeIsUp(false);
+    };
+  }, [quizProgress.elapsedTime, quizState]);
+
   const startTimer = () => {
     setQuizProgress(prev => ({ ...prev, elapsedTime: 0 }));
+    setTimeIsUp(false);
     const newTimer = setInterval(() => {
       setQuizProgress(prev => ({
         ...prev,
@@ -107,6 +143,84 @@ export default function PlayPage() {
       }));
     }, 1000);
     setTimer(newTimer);
+  };
+
+  // Handle when time is up for a question
+  const handleTimeUp = async () => {
+    const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
+    const currentPlayer = quizProgress.players[currentDifficulty];
+    const timeTaken = TIME_LIMITS[currentDifficulty]; // Use max time when time is up
+    
+    // Update quiz progress
+    setQuizProgress(prev => {
+      const updatedResults = { ...prev.results };
+      updatedResults[currentDifficulty] = false;
+      
+      const updatedAnswers = { ...prev.answers };
+      updatedAnswers[currentDifficulty] = "Time's up";
+      
+      const updatedTimeTaken = { ...prev.timeTaken };
+      updatedTimeTaken[currentDifficulty] = timeTaken;
+      
+      return {
+        ...prev,
+        results: updatedResults,
+        answers: updatedAnswers,
+        timeTaken: updatedTimeTaken
+      };
+    });
+    
+    // Move to next question or complete quiz
+    const nextState = {
+      easy: 'hard',
+      hard: 'hof',
+      hof: 'summary'
+    }[currentDifficulty];
+    
+    // Save the result to user history if we have a game ID
+    if (isSignedIn && currentPlayer && quizProgress.gameId) {
+      try {
+        await saveUserQuestionHistory(quizProgress.gameId, [{
+          game_id: quizProgress.gameId,
+          player_id: currentPlayer.id,
+          answered_correctly: false,
+          time_taken: timeTaken,
+        }]);
+      } catch (error) {
+        console.error('Error saving question history:', error);
+      }
+    }
+    
+    if (nextState === 'summary') {
+      // Complete the quiz and show summary
+      setQuizState('summary');
+      
+      // Save final game history if not already saved
+      if (isSignedIn && !quizProgress.gameId) {
+        try {
+          const totalTimeTaken = Object.values(quizProgress.timeTaken).reduce((sum, time) => sum + (time || 0), 0) + timeTaken;
+          const correctCount = Object.values(quizProgress.results).filter(Boolean).length;
+          
+          const gameData = {
+            game_date: new Date().toISOString(),
+            score: correctCount,
+            correct_answers: correctCount,
+            total_questions: 3,
+            time_taken: totalTimeTaken,
+            difficulty: 'daily'
+          };
+          
+          await saveUserGameHistory(gameData);
+        } catch (error) {
+          console.error('Error saving final game history:', error);
+        }
+      }
+    } else {
+      // Move to next question
+      setUserAnswer('');
+      setQuizState(nextState as QuizState);
+      startTimer();
+    }
   };
 
   const loadDailyChallenge = async () => {
@@ -145,13 +259,49 @@ export default function PlayPage() {
     console.log('Starting quiz...');
     await loadDailyChallenge();
     console.log('Setting initial quiz state...');
-    setQuizProgress(prev => {
-      console.log('Previous quiz progress:', prev);
-      return {
+    
+    // Initialize game record if user is signed in
+    if (isSignedIn) {
+      try {
+        const gameData = {
+          game_date: new Date().toISOString(),
+          score: 0,
+          correct_answers: 0,
+          total_questions: 3,
+          time_taken: 0,
+          difficulty: 'daily'
+        };
+        
+        const gameResult = await saveUserGameHistory(gameData);
+        
+        if (gameResult.success && gameResult.gameId) {
+          setQuizProgress(prev => ({
+            ...INITIAL_QUIZ_PROGRESS,
+            players: prev.players,
+            gameId: gameResult.gameId
+          }));
+          
+          gameInitialized.current = true;
+        } else {
+          setQuizProgress(prev => ({
+            ...INITIAL_QUIZ_PROGRESS,
+            players: prev.players
+          }));
+        }
+      } catch (error) {
+        console.error('Error initializing game record:', error);
+        setQuizProgress(prev => ({
+          ...INITIAL_QUIZ_PROGRESS,
+          players: prev.players
+        }));
+      }
+    } else {
+      setQuizProgress(prev => ({
         ...INITIAL_QUIZ_PROGRESS,
         players: prev.players
-      };
-    });
+      }));
+    }
+    
     setQuizState('easy');
     startTimer();
   };
@@ -217,6 +367,7 @@ export default function PlayPage() {
     // Update progress
     setQuizProgress(prev => ({
       ...prev,
+      currentQuestion: prev.currentQuestion + 1,
       score: isCorrect ? prev.score + 1 : prev.score,
       answers: {
         ...prev.answers,
@@ -239,37 +390,42 @@ export default function PlayPage() {
       hof: 'summary'
     }[currentDifficulty];
 
+    // Save question history
+    if (isSignedIn && currentPlayer && quizProgress.gameId) {
+      try {
+        await saveUserQuestionHistory(quizProgress.gameId, [{
+          game_id: quizProgress.gameId,
+          player_id: currentPlayer.id,
+          answered_correctly: isCorrect,
+          time_taken: timeTaken,
+        }]);
+      } catch (error) {
+        console.error('Error saving question history:', error);
+      }
+    }
+
     if (nextState === 'summary') {
-      // Save game history
-      if (isSignedIn) {
+      // Update final game history
+      if (isSignedIn && quizProgress.gameId) {
         try {
           const totalTimeTaken = Object.values(quizProgress.timeTaken).reduce((a, b) => a + (b || 0), 0) + timeTaken;
+          const finalScore = quizProgress.score + (isCorrect ? 1 : 0);
           
-          const gameData = {
+          // Only pass the fields that saveUserGameHistory expects
+          await saveUserGameHistory({
             game_date: new Date().toISOString(),
-            score: quizProgress.score + (isCorrect ? 1 : 0),
-            correct_answers: quizProgress.score + (isCorrect ? 1 : 0),
+            score: finalScore,
+            correct_answers: finalScore,
             total_questions: 3,
             time_taken: totalTimeTaken,
             difficulty: 'daily'
-          };
-
-          const gameResult = await saveUserGameHistory(gameData);
-
-          if (gameResult.success && gameResult.gameId) {
-            const questionData = Object.entries(quizProgress.players).map(([diff, player]) => ({
-              game_id: gameResult.gameId,
-              player_id: player?.id || 0,
-              answered_correctly: quizProgress.results[diff as 'easy' | 'hard' | 'hof'] || false,
-              time_taken: quizProgress.timeTaken[diff as 'easy' | 'hard' | 'hof'] || 0
-            }));
-
-            await saveUserQuestionHistory(gameResult.gameId, questionData);
-          }
+          });
         } catch (error) {
-          console.error('Error saving game history:', error);
+          console.error('Error updating game history:', error);
         }
       }
+      
+      setQuizState('summary');
     } else {
       setUserAnswer('');
       setQuizState(nextState as QuizState);
@@ -286,6 +442,18 @@ export default function PlayPage() {
   const renderProgressBar = () => {
     if (quizState === 'intro' || quizState === 'summary') return null;
     
+    const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
+    const timeLimit = TIME_LIMITS[currentDifficulty];
+    const timeRemaining = Math.max(0, timeLimit - quizProgress.elapsedTime);
+    const timePercentage = (timeRemaining / timeLimit) * 100;
+    
+    // Create a custom class for the indicator based on time remaining
+    const indicatorStyle = {
+      backgroundColor: timePercentage > 66 ? 'var(--success)' : 
+                      timePercentage > 33 ? 'var(--warning)' : 
+                      'var(--error)'
+    };
+    
     return (
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -296,8 +464,24 @@ export default function PlayPage() {
           <span>Question {quizProgress.currentQuestion + 1} of {quizProgress.totalQuestions}</span>
           <div className="flex items-center gap-2">
             <Timer className="w-4 h-4" />
-            <span>{formatTime(quizProgress.elapsedTime)}</span>
+            <span className={timeRemaining < 10 ? "text-error animate-pulse" : ""}>
+              {formatTime(timeRemaining)}
+            </span>
           </div>
+        </div>
+        
+        <div className={`relative h-2 w-full overflow-hidden rounded-full ${
+          timePercentage > 66 ? 'bg-success/20' : 
+          timePercentage > 33 ? 'bg-warning/20' : 
+          'bg-error/20'
+        }`}>
+          <div 
+            className="h-full w-full flex-1 transition-all"
+            style={{
+              ...indicatorStyle,
+              transform: `translateX(-${100 - timePercentage}%)`
+            }}
+          />
         </div>
       </motion.div>
     );
@@ -336,6 +520,9 @@ export default function PlayPage() {
             )}
           </div>
         </CardHeader>
+        
+        {renderProgressBar()}
+        
         <CardContent className="space-y-6">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-6 text-gray-100">
@@ -351,12 +538,26 @@ export default function PlayPage() {
               />
             </div>
             <div className="max-w-sm mx-auto">
-              <CollegeAutocomplete
-                value={userAnswer}
-                onChange={setUserAnswer}
-                onSubmit={handleSubmitAnswer}
-                className="relative glass-input-container"
-              />
+              {timeIsUp ? (
+                <div className="relative glass-input-container opacity-50">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={userAnswer || "Time's up!"}
+                    readOnly
+                    className="w-full h-12 pl-11 pr-4 text-base text-gray-100 bg-surface/40 backdrop-blur-md border border-gray-700/50 rounded-xl"
+                  />
+                </div>
+              ) : (
+                <CollegeAutocomplete
+                  value={userAnswer}
+                  onChange={setUserAnswer}
+                  onSubmit={handleSubmitAnswer}
+                  className="relative glass-input-container"
+                />
+              )}
             </div>
           </div>
         </CardContent>
@@ -365,13 +566,13 @@ export default function PlayPage() {
             <button 
               onClick={handleSubmitAnswer}
               className={`glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border text-gray-100 font-medium transition-all duration-300 ${
-                !userAnswer.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+                !userAnswer.trim() || timeIsUp ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
               } ${
                 quizState === 'easy' ? 'bg-success/20 border-success/30 hover:bg-success/30 hover:border-success/50 hover:shadow-success/20' :
                 quizState === 'hard' ? 'bg-warning/20 border-warning/30 hover:bg-warning/30 hover:border-warning/50 hover:shadow-warning/20' :
                 'bg-info/20 border-info/30 hover:bg-info/30 hover:border-info/50 hover:shadow-info/20'
               }`}
-              disabled={!userAnswer.trim()}
+              disabled={!userAnswer.trim() || timeIsUp}
             >
               <span>Submit Answer</span>
               <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
@@ -404,6 +605,7 @@ export default function PlayPage() {
                   
                   return {
                     ...prev,
+                    currentQuestion: prev.currentQuestion + 1,
                     results: updatedResults,
                     answers: updatedAnswers,
                     timeTaken: updatedTimeTaken
@@ -411,9 +613,9 @@ export default function PlayPage() {
                 });
                 
                 // Save the result to user history
-                if (isSignedIn && currentPlayer) {
-                  saveUserQuestionHistory(quizProgress.gameId || '', [{
-                    game_id: quizProgress.gameId || '',
+                if (isSignedIn && currentPlayer && quizProgress.gameId) {
+                  saveUserQuestionHistory(quizProgress.gameId, [{
+                    game_id: quizProgress.gameId,
                     player_id: currentPlayer.id,
                     answered_correctly: false,
                     time_taken: timeTaken,
@@ -436,20 +638,25 @@ export default function PlayPage() {
                   setQuizState('summary');
                   
                   // Save final game history
-                  if (isSignedIn) {
+                  if (isSignedIn && quizProgress.gameId) {
                     const correctCount = Object.values(quizProgress.results).filter(Boolean).length;
+                    const totalTime = Object.values(quizProgress.timeTaken).reduce((sum, time) => sum + (time || 0), 0);
+                    
+                    // Only pass the fields that saveUserGameHistory expects
                     saveUserGameHistory({
                       game_date: new Date().toISOString(),
                       score: correctCount,
                       correct_answers: correctCount,
                       total_questions: 3,
-                      time_taken: Object.values(quizProgress.timeTaken).reduce((sum, time) => sum + (time || 0), 0),
-                      difficulty: 'mixed',
+                      time_taken: totalTime,
+                      difficulty: 'daily',
                     }).catch(console.error);
                   }
                 }
               }}
               className={`glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border font-medium transition-all duration-300 hover:shadow-lg ${
+                timeIsUp ? 'opacity-50 cursor-not-allowed' : ''
+              } ${
                 quizState === 'easy' ? 'text-gray-300 border-success/20 hover:border-success/30 hover:text-gray-100' :
                 quizState === 'hard' ? 'text-gray-300 border-warning/20 hover:border-warning/30 hover:text-gray-100' :
                 'text-gray-300 border-info/20 hover:border-info/30 hover:text-gray-100'
@@ -458,6 +665,7 @@ export default function PlayPage() {
                 background: 'rgba(25, 25, 30, 0.5)',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
               }}
+              disabled={timeIsUp}
             >
               <span>I don't know ball</span>
               <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
@@ -575,23 +783,23 @@ export default function PlayPage() {
   const renderIntro = () => {
     return (
       <>
-        <motion.div variants={itemVariants} className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4 gradient-text">Daily Challenge</h1>
-          <p className="text-gray-300 text-lg">Test your NFL knowledge with today's three questions</p>
+        <motion.div variants={itemVariants} className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3 gradient-text">Daily Challenge</h1>
+          <p className="text-gray-300 text-base md:text-lg max-w-md mx-auto">Test your NFL knowledge with today's three questions</p>
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="glass hover:shadow-xl transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary-green">
+        <motion.div variants={itemVariants} className="w-full max-w-md mx-auto">
+          <Card className="glass hover:shadow-xl transition-all duration-300 border-t border-gray-700/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-primary-green text-xl">
                 <CalendarDays className="h-5 w-5" />
                 Today's Challenge
               </CardTitle>
               <CardDescription className="text-gray-300">Three questions of increasing difficulty</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+            <CardContent className="pb-4">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between px-1">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-gray-300" />
                     <span className="text-sm text-gray-300">9 min total</span>
@@ -602,7 +810,7 @@ export default function PlayPage() {
                   </div>
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-3 py-1">
                   <div className="flex items-center gap-2 text-sm">
                     <div className="w-2 h-2 rounded-full bg-success"></div>
                     <span className="text-gray-300">Easy Question (2 min)</span>
@@ -618,17 +826,22 @@ export default function PlayPage() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row gap-4">
+            <CardFooter className="flex flex-col sm:flex-row gap-3 pt-1 pb-4 px-6">
               <Button
                 onClick={handleStartQuiz}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto px-5 py-2 h-auto"
                 variant="default"
+                size="lg"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Play Now
               </Button>
               
-              <Button variant="outline" asChild className="w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                asChild 
+                className="w-full sm:w-auto px-4 py-2 h-auto"
+              >
                 <Link href="/archive">
                   <History className="w-4 h-4 mr-2" />
                   View Archive
@@ -652,8 +865,8 @@ export default function PlayPage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-300"></div>
       </div>
     );
   }
@@ -663,38 +876,43 @@ export default function PlayPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="min-h-screen flex items-center justify-center"
+        className="min-h-screen flex items-center justify-center p-4"
       >
-        <div className="text-center p-8 max-w-md mx-auto glass rounded-xl">
+        <div className="text-center p-6 max-w-md mx-auto glass rounded-xl shadow-lg border-t border-gray-700/30 w-full">
           <h1 className="text-2xl font-bold mb-4 text-gray-100">Sign In Required</h1>
           <p className="mb-6 text-gray-300">Please sign in to play the daily NFL College Guessing Game.</p>
-          <button
-            onClick={() => window.location.href = '/sign-in'}
-            className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-4 py-2.5 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
-          >
-            <span>Sign In</span>
-            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
-          </button>
+          <div className="flex justify-center">
+            <button
+              onClick={() => window.location.href = '/sign-in'}
+              className="glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] text-base px-5 py-3 rounded-full backdrop-blur-md bg-surface/30 border border-gray-700/30 text-gray-100 font-medium transition-all duration-300 hover:bg-primary-green/20 hover:border-primary-green/40 hover:shadow-lg hover:shadow-primary-green/20"
+            >
+              <span>Sign In</span>
+              <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-primary-green/10 to-secondary-green/10 blur"></div>
+            </button>
+          </div>
         </div>
       </motion.div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <div className="container mx-auto px-4 py-6 md:py-8 flex flex-col items-center justify-center min-h-[calc(100vh-80px)]">
       {isLoading ? (
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-md mx-auto">
+          <Card className="glass shadow-lg">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-300" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
+          className="w-full"
         >
           <AnimatePresence mode="wait">
             <motion.div

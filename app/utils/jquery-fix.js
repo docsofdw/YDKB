@@ -43,4 +43,14 @@ export const cleanupJQueryFix = () => {
       delete window.jQuery;
     }
   }
-}; 
+};
+
+// Fix line 20
+if ($('.modal').length) {
+  $('.modal').modal('hide');
+}
+
+// Fix line 27
+if ($('.toast').length) {
+  $('.toast').toast('hide');
+} 

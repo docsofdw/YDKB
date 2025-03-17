@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface Player {
@@ -15,16 +15,18 @@ export interface Player {
  * This is safe to use in client components
  */
 export function createSafeClient() {
-  const supabase = createClientComponentClient({
-    options: {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
       global: {
         headers: {
           Accept: '*/*',
           'Content-Type': 'application/json',
         },
       },
-    },
-  });
+    }
+  );
   return supabase;
 }
 
@@ -38,10 +40,26 @@ async function createChallengeForToday(supabase: SupabaseClient) {
     console.log('Creating new challenge for today');
     const today = new Date().toISOString().split('T')[0];
     
-    // Get three random players
-    const easyPlayer = await getRandomPlayer('easy');
-    const hardPlayer = await getRandomPlayer('hard');
-    const hofPlayer = await getRandomPlayer('hof');
+    // Get recent player IDs to avoid repeating recent challenges
+    const { data: recentChallenges } = await supabase
+      .from('daily_challenges')
+      .select('easy_player_id, hard_player_id, hof_player_id')
+      .order('challenge_date', { ascending: false })
+      .limit(7);
+    
+    const recentPlayerIds = new Set<number>();
+    if (recentChallenges) {
+      recentChallenges.forEach(challenge => {
+        recentPlayerIds.add(challenge.easy_player_id);
+        recentPlayerIds.add(challenge.hard_player_id);
+        recentPlayerIds.add(challenge.hof_player_id);
+      });
+    }
+    
+    // Get three random players that haven't been used recently
+    const easyPlayer = await getRandomPlayerExcluding('easy', Array.from(recentPlayerIds));
+    const hardPlayer = await getRandomPlayerExcluding('hard', Array.from(recentPlayerIds));
+    const hofPlayer = await getRandomPlayerExcluding('hof', Array.from(recentPlayerIds));
     
     console.log('Selected players for challenge:', {
       easy: easyPlayer,
@@ -88,11 +106,12 @@ export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Pla
       return getFallbackPlayer();
     }
     
+    // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
     console.log('Checking for challenge on date:', today);
     
     // Try to get the challenge for today's date
-    let { data: challenge, error: challengeError } = await supabase
+    const { data: challenge, error: challengeError } = await supabase
       .from('daily_challenges')
       .select('*')
       .eq('challenge_date', today)
@@ -101,11 +120,26 @@ export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Pla
     // If no challenge found for today, create one
     if (challengeError || !challenge) {
       console.log('No challenge found for today, creating new challenge');
-      challenge = await createChallengeForToday(supabase);
       
-      if (!challenge) {
-        console.log('Failed to create challenge, getting random player');
-        return await getRandomPlayer(difficulty);
+      // Check if there's an existing challenge with today's date
+      // This is a double-check to prevent race conditions
+      const { data: existingChallenge } = await supabase
+        .from('daily_challenges')
+        .select('*')
+        .eq('challenge_date', today)
+        .maybeSingle();
+      
+      if (existingChallenge) {
+        console.log('Challenge already exists (race condition), using existing challenge');
+        challenge = existingChallenge;
+      } else {
+        // Create a new challenge for today
+        challenge = await createChallengeForToday(supabase);
+        
+        if (!challenge) {
+          console.log('Failed to create challenge, getting random player');
+          return await getRandomPlayer(difficulty);
+        }
       }
     }
     
@@ -152,6 +186,55 @@ export async function getTodaysChallengePlayer(difficulty = 'easy'): Promise<Pla
   } catch (error) {
     console.error('Error in getTodaysChallengePlayer:', error);
     return await getRandomPlayer(difficulty);
+  }
+}
+
+/**
+ * Get a random player with a specific difficulty, excluding certain player IDs
+ * @param difficulty - Difficulty level
+ * @param excludeIds - Array of player IDs to exclude
+ * @returns Player data
+ */
+export async function getRandomPlayerExcluding(
+  difficulty: string | null = null, 
+  excludeIds: number[] = []
+): Promise<Player> {
+  try {
+    const supabase = createSafeClient();
+    if (!supabase) {
+      return getFallbackPlayer();
+    }
+    
+    // Get the appropriate columns to select based on schema
+    const selectColumns = await getPlayerSelectColumns(supabase);
+    
+    // Build query
+    let query = supabase.from('players').select(selectColumns);
+    
+    // Add difficulty filter if specified
+    if (difficulty && difficulty !== 'random') {
+      query = query.eq('difficulty', difficulty);
+    }
+    
+    // Exclude specific player IDs if provided
+    if (excludeIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+    
+    // Get random order
+    query = query.order('id', { ascending: false });
+    
+    // Get random player
+    const { data, error } = await query.limit(1).single();
+    
+    if (error || !data) {
+      // If no player found with exclusions, try without exclusions
+      return await getRandomPlayer(difficulty);
+    }
+    
+    return data;
+  } catch (error) {
+    return getFallbackPlayer();
   }
 }
 

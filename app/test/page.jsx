@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function TestPage() {
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,10 @@ export default function TestPage() {
   
   const testDatabaseConnection = async () => {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      );
       
       // Test 1: Simple query to get player count
       setDbTest({ status: 'running', message: 'Testing players table query...' });

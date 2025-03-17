@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { format, addDays } from 'date-fns';
 
 export default function AdminPage() {
@@ -12,7 +12,10 @@ export default function AdminPage() {
   const [error, setError] = useState(null);
   
   // Initialize Supabase client
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  );
   
   useEffect(() => {
     fetchChallenges();

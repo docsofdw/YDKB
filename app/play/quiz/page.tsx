@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import Link from "next/link";
-import { Clock, Zap, Trophy, Star, BarChart, History, Users, Trophy2 } from "lucide-react";
+import { Clock, Zap, Trophy, Star, BarChart, History, Users, Award } from "lucide-react";
 
 // Quiz categories data
 const QUIZ_CATEGORIES = [
@@ -53,7 +53,7 @@ const QUIZ_CATEGORIES = [
     id: "football-rules",
     title: "Football Rules",
     description: "How well do you know the rules of the game?",
-    icon: <Trophy2 className="h-5 w-5" />,
+    icon: <Award className="h-5 w-5" />,
     difficulty: "Medium",
     questionCount: 12,
     timeLimit: "8 min",

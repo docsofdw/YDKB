@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function DiagnosticPage() {
   const [supabaseStatus, setSupabaseStatus] = useState('checking');
@@ -16,7 +16,10 @@ export default function DiagnosticPage() {
   
   const checkDatabase = async () => {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      );
       
       // Check Supabase connection
       setSupabaseStatus('connecting');

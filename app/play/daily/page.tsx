@@ -15,21 +15,22 @@ export default function DailyChallengePage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
   if (isClient && !isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-8 max-w-md mx-auto">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center p-6 max-w-md mx-auto bg-card rounded-lg shadow-lg">
           <h1 className="text-2xl font-bold mb-4">Sign In Required</h1>
           <p className="mb-6">Please sign in to play the daily quiz.</p>
           <Button
             onClick={() => window.location.href = '/sign-in'}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="w-full sm:w-auto px-8 py-2"
+            size="lg"
           >
             Sign In
           </Button>
@@ -39,10 +40,10 @@ export default function DailyChallengePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Daily Challenge</h1>
-        <p className="text-muted-foreground">Complete today's challenge to earn points and extend your streak!</p>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 py-8">
+      <div className="w-full max-w-md mx-auto text-center mb-6">
+        <h1 className="text-3xl font-bold mb-3">Daily Challenge</h1>
+        <p className="text-muted-foreground">Test your NFL knowledge with today's three questions</p>
       </div>
       
       <DailyQuiz />
