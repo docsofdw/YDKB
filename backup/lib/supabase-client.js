@@ -1,7 +1,7 @@
 /**
  * Utility functions for Supabase client initialization and error handling
  */
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 
 // Cache the client instance to avoid creating multiple instances
 let cachedClient = null;
@@ -16,7 +16,10 @@ export function createSafeClient() {
   
   try {
     // Create new client
-    const supabase = createClientComponentClient();
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
     
     // Cache the client for future use
     cachedClient = supabase;

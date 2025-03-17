@@ -7,7 +7,7 @@ import { GuessInput } from "./GuessInput"
 import { AttemptsDisplay } from "./AttemptsDisplay"
 import { useGame } from "@/hooks/useGame"
 import QuestionCard from "@/components/QuestionCard"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 import type { Difficulty } from "@/types/game"
 
 // Define types for the player data
@@ -52,7 +52,10 @@ export function GameContainer() {
       setError(null)
       
       // Create Supabase client
-      const supabase = createClientComponentClient()
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+      )
       
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0]
