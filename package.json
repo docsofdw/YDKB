@@ -14,7 +14,7 @@
         "clean": "rm -rf .next node_modules package-lock.json && npm install --no-ignore-scripts",
         "vercel-build": "bash vercel-prep.sh && next build",
         "prebuild:vercel": "npm config set ignore-scripts false",
-        "postinstall": "npm install autoprefixer postcss tailwindcss date-fns typescript@5.7.3 --no-save"
+        "postinstall": "npm install autoprefixer postcss tailwindcss date-fns --no-save"
     },
     "dependencies": {
         "@clerk/nextjs": "^6.12.0",
@@ -53,6 +53,6 @@
         "@typescript-eslint/parser": "^8.26.1",
         "eslint": "^8.57.1",
         "eslint-config-next": "14.1.0",
-        "typescript": "^5.7.3"
+        "typescript": "5.7.3"
     }
 }
