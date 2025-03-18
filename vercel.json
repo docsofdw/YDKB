@@ -1,8 +1,8 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm config set ignore-scripts false && npm install",
   "github": {
     "silent": true
   },
@@ -26,6 +26,8 @@
     }
   ],
   "env": {
-    "NPM_CONFIG_IGNORE_SCRIPTS": "false"
-  }
+    "NPM_CONFIG_IGNORE_SCRIPTS": "false",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
+  "nodeVersion": "18.x"
 } 

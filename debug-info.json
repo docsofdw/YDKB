@@ -1,0 +1,5 @@
+{
+  "nodeVersion": "v18.19.0",
+  "cwd": "/Users/duke/development/YDKB",
+  "npmConfig": "; \"user\" config from /Users/duke/.npmrc\n\nignore-scripts = false \n\n; \"project\" config from /Users/duke/development/YDKB/.npmrc\n\nauto-install-peers = true \nlegacy-peer-deps = false \nprefer-offline = false \nstrict-peer-dependencies = false \n\n; node bin location = /Users/duke/.nvm/versions/node/v18.19.0/bin/node\n; node version = v18.19.0\n; npm local prefix = /Users/duke/development/YDKB\n; npm version = 10.2.3\n; cwd = /Users/duke/development/YDKB\n; HOME = /Users/duke\n; Run `npm config ls -l` to show all defaults.\n"
+}
