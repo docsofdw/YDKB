@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "bash vercel-prep.sh && npm run vercel-build",
   "installCommand": "npm config set ignore-scripts false && npm install",
   "github": {
     "silent": true
