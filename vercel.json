@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm install --no-scripts",
+  "installCommand": "npm install",
   "github": {
     "silent": true
   },

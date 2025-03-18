@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'You Don't Know Ball | NFL College Trivia',
+    title: 'You Don\'t Know Ball | NFL College Trivia',
     description: 'Test your knowledge of NFL players\' college careers',
   },
   verification: {
