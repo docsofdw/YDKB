@@ -35,11 +35,8 @@
 2. **Connect to Vercel**
    - Create a new project in Vercel
    - Connect to your GitHub repository
-   - Configure project settings:
-     - Build Command: `npm run build`
-     - Output Directory: `.next`
-     - Install Command: `npm install`
-     - Node.js Version: 18.x
+   - Let Vercel auto-detect Next.js framework settings
+   - Do NOT override the default build settings
 
 3. **Environment Setup**
    - Add all environment variables from the above table
@@ -48,6 +45,23 @@
 4. **Deploy**
    - Click "Deploy" in the Vercel dashboard
    - Monitor build logs for any errors
+
+## Troubleshooting Build Issues
+
+If you encounter build failures:
+
+1. **Module Not Found Errors**
+   - Make sure you don't have a `postinstall` script in package.json that runs `next build`
+   - Let Vercel handle the build process automatically
+   - Avoid overriding default build commands in vercel.json
+
+2. **Node.js Version**
+   - Ensure your project uses Node.js 18.x (Vercel default)
+   - Check for any version constraints in package.json "engines" field
+
+3. **Cache Issues**
+   - If repeated failures occur, try clearing the build cache in Vercel dashboard
+   - Go to Project → Settings → General → Build & Development Settings → Clear Build Cache
 
 ## Post-Deployment Verification
 
