@@ -28,6 +28,33 @@ npm install
 npm run dev
 ```
 
+## 🌐 Vercel Deployment
+
+This application is configured for deployment on Vercel. Follow these steps to deploy:
+
+1. Push your code to GitHub
+2. Connect your GitHub repository to Vercel
+3. Set up the following environment variables in the Vercel dashboard:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_SITE_URL` (use your production URL)
+   - `NEXT_PUBLIC_SITE_NAME`
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+   - `CLERK_SECRET_KEY`
+   - `NEXT_PUBLIC_CLERK_SIGN_IN_URL`
+   - `NEXT_PUBLIC_CLERK_SIGN_UP_URL`
+   - `ADMIN_API_KEY`
+   - `CRON_SECRET`
+   - `THESPORTSDB_API_KEY`
+4. Deploy with the following settings:
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
+   - Install Command: `npm install`
+   - Node.js Version: 18.x
+
+For detailed documentation on Vercel deployment, visit [Vercel's Next.js documentation](https://vercel.com/docs/frameworks/nextjs).
+
 ## 🛠️ Built With
 
 - [Next.js 14](https://nextjs.org/) - React Framework

@@ -3,9 +3,8 @@
 
 import { Button } from "@/components/common/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/common/ui/card"
-import { GAME_CONFIG } from "@/config/constants"
+import { GAME_CONFIG, type Difficulty } from "@/config/constants"
 import { useGame } from "@/hooks/useGame"
-import type { Difficulty } from "@/types/game"
 
 export function DifficultySelector() {
   const { selectDifficulty, selectedDifficulty } = useGame()

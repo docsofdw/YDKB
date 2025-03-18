@@ -23,3 +23,9 @@ yarn-error.log*
 # Local development files
 .vscode/
 .idea/
+
+# Vercel
+.vercel
+
+# TypeScript incremental compilation cache
+*.tsbuildinfo

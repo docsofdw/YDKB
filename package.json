@@ -11,7 +11,8 @@
         "start": "next start",
         "lint": "next lint",
         "type-check": "tsc --noEmit",
-        "clean": "rm -rf .next node_modules package-lock.json && npm install"
+        "clean": "rm -rf .next node_modules package-lock.json && npm install",
+        "postinstall": "next build"
     },
     "dependencies": {
         "@clerk/nextjs": "^6.12.0",

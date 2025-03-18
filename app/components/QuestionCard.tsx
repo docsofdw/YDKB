@@ -1,89 +1,67 @@
 "use client"
 
-import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/common/ui/card"
 import { Button } from "@/app/components/common/ui/button"
+import Image from "next/image"
+
+interface PlayerOption {
+  id: number
+  name: string
+  team: string
+  position: string
+  jersey_number: string
+  ppg: number
+  college: string
+  height?: string
+  weight?: string
+  experience?: string
+}
 
 interface QuestionCardProps {
-  playerData: {
-    name: string
-    position: string
-    team: string
-    imageUrl?: string
-  }
-  hintsRevealed: number
-  onRevealHint?: () => void
-  maxHints?: number
+  question: string
+  options: PlayerOption[]
+  onSelect: (index: number) => void
+  selectedOption: number | null
+  correctOption: number
+  showAnswer: boolean
 }
 
 export default function QuestionCard({
-  playerData,
-  hintsRevealed = 0,
-  onRevealHint,
-  maxHints = 3
+  question,
+  options,
+  onSelect,
+  selectedOption,
+  correctOption,
+  showAnswer,
 }: QuestionCardProps) {
-  if (!playerData) return null
-
-  const { name, position, team, imageUrl } = playerData
-
-  const getHintText = (hintLevel: number) => {
-    if (hintLevel <= hintsRevealed) {
-      switch (hintLevel) {
-        case 1:
-          return `Position: ${position}`
-        case 2:
-          return `Team: ${team}`
-        case 3:
-          return `First letter of name: ${name.charAt(0)}`
-        default:
-          return ""
-      }
-    }
-    return "? ? ?"
-  }
-
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-center text-2xl">Which college did this player attend?</CardTitle>
+        <CardTitle className="text-center text-xl">{question}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="relative w-full aspect-square max-w-[240px] mx-auto rounded-lg overflow-hidden bg-muted">
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={`NFL Player ${name}`}
-              fill
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center">
-              <div className="w-24 h-24 rounded-full bg-gray-300 mb-4"></div>
-              <div className="w-32 h-12 bg-gray-300"></div>
-              <span className="text-muted-foreground mt-2">Player Image</span>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <div className="grid grid-cols-1 gap-2">
-            {[1, 2, 3].map((level) => (
-              <div key={level} className="p-3 bg-muted rounded-md">
-                <p className="text-sm font-medium">Hint {level}: {getHintText(level)}</p>
-              </div>
-            ))}
-          </div>
-          
-          {onRevealHint && hintsRevealed < maxHints && (
-            <Button 
-              onClick={onRevealHint} 
-              variant="outline" 
-              className="w-full mt-4"
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {options.map((option, index) => (
+            <Button
+              key={option.id}
+              variant={
+                showAnswer
+                  ? index === correctOption
+                    ? "default"
+                    : selectedOption === index
+                    ? "destructive"
+                    : "outline"
+                  : selectedOption === index
+                  ? "default"
+                  : "outline"
+              }
+              onClick={() => !showAnswer && onSelect(index)}
+              disabled={showAnswer}
+              className="w-full h-auto py-4 text-left"
             >
-              Reveal Hint ({hintsRevealed + 1}/{maxHints})
+              {option.college}
             </Button>
-          )}
+          ))}
         </div>
       </CardContent>
     </Card>

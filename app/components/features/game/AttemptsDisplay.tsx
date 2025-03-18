@@ -2,7 +2,7 @@
 "use client"
 
 import { Alert, AlertTitle } from "@/app/components/common/ui/alert"
-import { cn } from "@/app/lib/utils"
+import { cn } from "@/lib/utils"
 
 interface AttemptsDisplayProps {
   attempts: string[]
