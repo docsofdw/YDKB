@@ -28,6 +28,5 @@
   "env": {
     "NPM_CONFIG_IGNORE_SCRIPTS": "false",
     "NODE_OPTIONS": "--max-old-space-size=4096"
-  },
-  "nodeVersion": "18.x"
+  }
 } 
