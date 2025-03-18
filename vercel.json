@@ -1,4 +1,15 @@
 {
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max_old_space_size=4096"
+    }
+  },
   "version": 2,
   "framework": "nextjs",
   "buildCommand": "bash vercel-prep.sh && npm run vercel-build",
@@ -26,7 +37,6 @@
     }
   ],
   "env": {
-    "NPM_CONFIG_IGNORE_SCRIPTS": "false",
-    "NODE_OPTIONS": "--max-old-space-size=4096"
+    "NPM_CONFIG_IGNORE_SCRIPTS": "false"
   }
 } 

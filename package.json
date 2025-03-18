@@ -13,8 +13,7 @@
         "type-check": "tsc --noEmit",
         "clean": "rm -rf .next node_modules package-lock.json && npm install --no-ignore-scripts",
         "vercel-build": "bash vercel-prep.sh && next build",
-        "prebuild:vercel": "npm config set ignore-scripts false",
-        "postinstall": "npm install autoprefixer postcss tailwindcss date-fns --no-save"
+        "prebuild:vercel": "npm config set ignore-scripts false"
     },
     "dependencies": {
         "@clerk/nextjs": "^6.12.0",
