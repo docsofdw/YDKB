@@ -7,13 +7,11 @@
     },
     "scripts": {
         "dev": "next dev",
-        "prebuild": "node vercel-build.js",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
         "type-check": "tsc --noEmit",
-        "clean": "rm -rf .next node_modules package-lock.json && npm install",
-        "vercel-build": "npm config set ignore-scripts false && npm run build"
+        "clean": "rm -rf .next node_modules package-lock.json && npm install"
     },
     "dependencies": {
         "@clerk/nextjs": "^6.12.0",
