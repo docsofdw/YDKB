@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "nextjs",
   "buildCommand": "bash vercel-prep.sh && npm run vercel-build",
-  "installCommand": "npm config set ignore-scripts false && npm install",
+  "installCommand": "npm config set ignore-scripts false && npm install && npm install typescript@5.7.3 --no-save",
   "github": {
     "silent": true
   },

@@ -29,7 +29,7 @@ npm config set ignore-scripts false
 echo "Installing dependencies..."
 npm install
 # Explicitly install dependencies that were causing problems
-npm install autoprefixer postcss tailwindcss date-fns
+npm install autoprefixer postcss tailwindcss date-fns typescript@5.7.3 --no-save
 
 # Create jsconfig.json for path resolution (fallback for tsconfig)
 echo "Creating jsconfig.json for path resolution..."
