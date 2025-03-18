@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { getFriendsLeaderboard } from '@/app/lib/user-actions';
+import { getFriendsLeaderboard } from '../../../lib/user-actions';
 
 type LeaderboardEntry = {
   gameId: string;

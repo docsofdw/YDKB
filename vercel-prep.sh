@@ -31,6 +31,19 @@ npm install
 # Explicitly install dependencies that were causing problems
 npm install autoprefixer postcss tailwindcss date-fns
 
+# Create jsconfig.json for path resolution (fallback for tsconfig)
+echo "Creating jsconfig.json for path resolution..."
+cat > jsconfig.json << EOL
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
+EOL
+
 # Verify the arg module exists
 echo "Verifying Next.js compiled modules..."
 if [ -f node_modules/next/dist/compiled/arg/index.js ]; then

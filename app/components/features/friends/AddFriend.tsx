@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { sendFriendRequest } from '@/app/lib/user-actions';
-import { createSafeClient } from '@/app/lib/supabase-client';
+import { sendFriendRequest } from '../../../lib/user-actions';
+import { createSafeClient } from '../../../lib/supabase-client';
 
 export default function AddFriend() {
   const [email, setEmail] = useState('');

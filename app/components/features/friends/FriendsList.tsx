@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getFriends, getPendingFriendRequests, respondToFriendRequest } from '@/app/lib/user-actions';
+import { getFriends, getPendingFriendRequests, respondToFriendRequest } from '../../../lib/user-actions';
 import { useUser } from '@clerk/nextjs';
 
 type Friend = {

@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
     images: {
       domains: ['api.placeholder.com', 'example.com'],
@@ -12,6 +14,13 @@ const nextConfig = {
     // Enable output file tracing for improved serverless function performance on Vercel
     experimental: {
       outputFileTracingRoot: process.cwd(),
+    },
+    webpack: (config) => {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@': path.resolve(__dirname),
+      };
+      return config;
     },
   }
   
