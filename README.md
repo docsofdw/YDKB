@@ -84,6 +84,7 @@ For detailed documentation on Vercel deployment, visit [Vercel's Next.js documen
 
 - [Architecture Overview](./docs/architecture/README.md)
 - [Development Guide](./docs/development/README.md)
+- [Next.js Maintenance Guide](./docs/development/NEXT_MAINTENANCE.md)
 - [Component Documentation](./docs/components/README.md)
 - [API Documentation](./docs/api/README.md)
 

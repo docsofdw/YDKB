@@ -11,8 +11,9 @@
         "start": "next start",
         "lint": "next lint",
         "type-check": "tsc --noEmit",
-        "clean": "rm -rf .next node_modules package-lock.json && npm install",
-        "vercel-build": "npm run build"
+        "clean": "rm -rf .next node_modules package-lock.json && npm install --no-ignore-scripts",
+        "vercel-build": "npm run build",
+        "prebuild:vercel": "npm config set ignore-scripts false"
     },
     "dependencies": {
         "@clerk/nextjs": "^6.12.0",
