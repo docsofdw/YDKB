@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import FriendsList from '@/app/components/features/friends/FriendsList';
-import AddFriend from '@/app/components/features/friends/AddFriend';
+import FriendsList from '../components/features/friends/FriendsList';
+import AddFriend from '../components/features/friends/AddFriend';
 import FriendsLeaderboard from '@/app/components/features/friends/FriendsLeaderboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { SignedIn, SignedOut } from "@clerk/nextjs";

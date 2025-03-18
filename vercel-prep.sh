@@ -28,6 +28,8 @@ npm config set ignore-scripts false
 # Install dependencies
 echo "Installing dependencies..."
 npm install
+# Explicitly install dependencies that were causing problems
+npm install autoprefixer postcss tailwindcss date-fns
 
 # Verify the arg module exists
 echo "Verifying Next.js compiled modules..."
