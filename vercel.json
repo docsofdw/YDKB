@@ -43,6 +43,5 @@
   "env": {
     "NPM_CONFIG_IGNORE_SCRIPTS": "false",
     "NODE_ENV": "production"
-  },
-  "nodeVersion": "18.x"
+  }
 } 

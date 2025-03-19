@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build:vercel",
+  "installCommand": "npm install --no-ignore-scripts && npm install --save-dev typescript@5.7.3",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_DISABLE_TYPECHECK": "true",
+    "NODE_OPTIONS": "--max_old_space_size=4096",
+    "NPM_CONFIG_IGNORE_SCRIPTS": "false"
+  }
+} 
