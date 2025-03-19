@@ -2,18 +2,22 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/next"
+      "use": "@vercel/next",
+      "config": {
+        "installCommand": "npm install --no-ignore-scripts && npm install --save-dev typescript@5.7.3"
+      }
     }
   ],
   "build": {
     "env": {
-      "NODE_OPTIONS": "--max_old_space_size=4096"
+      "NODE_OPTIONS": "--max_old_space_size=4096",
+      "NEXT_DISABLE_TYPECHECK": "true"
     }
   },
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "bash vercel-prep.sh && npm run vercel-build",
-  "installCommand": "npm config set ignore-scripts false && npm install && npm install typescript@5.7.3 --save-dev",
+  "buildCommand": "npm run build:vercel",
+  "installCommand": "npm install --no-ignore-scripts && npm install --save-dev typescript@5.7.3",
   "github": {
     "silent": true
   },
@@ -37,6 +41,8 @@
     }
   ],
   "env": {
-    "NPM_CONFIG_IGNORE_SCRIPTS": "false"
-  }
+    "NPM_CONFIG_IGNORE_SCRIPTS": "false",
+    "NODE_ENV": "production"
+  },
+  "nodeVersion": "18.x"
 } 

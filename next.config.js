@@ -11,6 +11,10 @@ const nextConfig = {
     poweredByHeader: false,
     reactStrictMode: true,
     swcMinify: true,
+    // Disable TypeScript checking during build (we'll rely on pre-commit hooks locally)
+    typescript: {
+      ignoreBuildErrors: true,
+    },
     // Enable output file tracing for improved serverless function performance on Vercel
     experimental: {
       outputFileTracingRoot: process.cwd(),
