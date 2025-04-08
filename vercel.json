@@ -29,6 +29,5 @@
     "NODE_VERSION": "18.19.0",
     "NPM_FLAGS": "--legacy-peer-deps"
   },
-  "outputDirectory": ".next",
   "regions": ["iad1"]
 } 

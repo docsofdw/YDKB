@@ -4,22 +4,25 @@ const path = require('path');
 const nextConfig = {
     images: {
       domains: ['api.placeholder.com', 'example.com'],
-      // Add Vercel image optimization
+      // Disable image optimization to avoid deployment issues
       unoptimized: true,
     },
     // Ensure proper handling of static files
     poweredByHeader: false,
     reactStrictMode: true,
     swcMinify: true,
-    // Disable TypeScript checking during build (we'll rely on pre-commit hooks locally)
+    // Disable ESLint and TypeScript checking during build
     eslint: {
       ignoreDuringBuilds: true
     },
+    typescript: {
+      ignoreBuildErrors: true,
+    },
     // Enable output file tracing for improved serverless function performance on Vercel
     experimental: {
-      outputFileTracingRoot: process.cwd(),
       esmExternals: 'loose'
     },
+    // Simplify webpack config to avoid conflicts
     webpack: (config) => {
       config.resolve.alias = {
         ...config.resolve.alias,
@@ -27,25 +30,10 @@ const nextConfig = {
       };
       return config;
     },
-    modularizeImports: {
-      'react': {
-        transform: 'react',
-        preventFullImport: false
-      },
-      'react-dom': {
-        transform: 'react-dom',
-        preventFullImport: false
-      }
-    },
-    // Add export configuration to address static build errors
-    output: 'standalone',
-    staticPageGenerationTimeout: 120,
-    // Disable static exports and use server-side rendering
-    // This will fix issues with dynamic page content
-    trailingSlash: true,
-    typescript: {
-      ignoreBuildErrors: true,
-    },
+    // Avoid trailing slash redirect issues
+    trailingSlash: false,
+    // Set a reasonable timeout for static page generation
+    staticPageGenerationTimeout: 180,
 }
   
 module.exports = nextConfig

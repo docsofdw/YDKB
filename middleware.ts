@@ -1,19 +1,20 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 // Create an array of public routes that don't require authentication
 const publicPaths = [
   "/",
   "/api/colleges",
-  "/login",
-  "/signup",
+  "/login(.*)",
+  "/signup(.*)",
   "/api/webhooks(.*)",
-  "/api/test-generation",
-  "/api/generate-image",
-  "/api/check-generation",
-  "/test-generation",
-  "/api/admin/generate-challenge-images",
-  "/api/admin/generate-future-images"
+  "/api/test-generation(.*)",
+  "/api/generate-image(.*)",
+  "/api/check-generation(.*)",
+  "/test-generation(.*)",
+  "/api/admin/generate-challenge-images(.*)",
+  "/api/admin/generate-future-images(.*)"
 ];
 
 // Create a route matcher for public paths
@@ -21,15 +22,32 @@ const isPublic = createRouteMatcher(publicPaths);
 
 // Use the clerkMiddleware with proper configuration
 export default clerkMiddleware(async (auth, req) => {
+  // Correctly call auth() and await the result to get the session details
+  const { userId } = await auth();
+  
+  // Skip static asset requests entirely
+  const url = new URL(req.url);
+  if (
+    url.pathname.startsWith("/_next") ||
+    url.pathname.startsWith("/images/") ||
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".jpg") ||
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".ico") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".js")
+  ) {
+    return NextResponse.next();
+  }
+  
   // If the route is public, allow access
   if (isPublic(req)) {
     return NextResponse.next();
   }
   
   // For protected routes, check if user is authenticated
-  // Get the auth object and check if user is authenticated
-  const authObject = await auth();
-  if (!authObject.userId) {
+  if (!userId) {
+    // Redirect unauthenticated users to the login page
     const signInUrl = new URL('/login', req.url);
     signInUrl.searchParams.set('redirect_url', req.url);
     return NextResponse.redirect(signInUrl);
@@ -41,9 +59,8 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files
-    '/((?!_next/static|_next/image|_next/webpack|favicon.ico|.+\\.css|.+\\.js|.+\\.png|.+\\.svg|.+\\.jpg|.+\\.jpeg|.+\\.gif).*)',
-    // Match all API routes except those that are explicitly public
-    '/api/:path*',
+    // Match all routes except for static files, _next internal files, and specific API endpoints
+    "/((?!_next/static|_next/image|favicon.ico|images|public).*)",
+    "/api/:path*"
   ],
 }; 
