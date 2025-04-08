@@ -1,8 +1,6 @@
 {
   "version": 2,
-  "framework": "nextjs",
   "buildCommand": "npm run vercel-build",
-  "installCommand": "npm install --legacy-peer-deps",
   "github": {
     "silent": true
   },
@@ -26,8 +24,7 @@
     }
   ],
   "env": {
-    "NODE_VERSION": "18.19.0",
-    "NPM_FLAGS": "--legacy-peer-deps"
+    "NODE_VERSION": "18.19.0"
   },
   "regions": ["iad1"]
 } 
