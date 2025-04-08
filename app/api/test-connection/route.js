@@ -13,24 +13,16 @@ export async function GET() {
     const startTime = Date.now();
     
     // Check if we can connect to Supabase
-    const { data: connectionTest, error: connectionError } = await supabase.from('_test_connection').select('*').limit(1).catch(err => {
-      return { data: null, error: err };
-    });
+    const { data: connectionTest, error: connectionError } = await supabase.from('_test_connection').select('*').limit(1);
     
     // Check if colleges table exists
-    const { data: colleges, error: collegesError } = await supabase.from('colleges').select('id').limit(1).catch(err => {
-      return { data: null, error: err };
-    });
+    const { data: colleges, error: collegesError } = await supabase.from('colleges').select('id').limit(1);
     
     // Check if players table exists
-    const { data: players, error: playersError } = await supabase.from('players').select('id').limit(1).catch(err => {
-      return { data: null, error: err };
-    });
+    const { data: players, error: playersError } = await supabase.from('players').select('id').limit(1);
     
     // Check if daily_challenges table exists
-    const { data: challenges, error: challengesError } = await supabase.from('daily_challenges').select('id').limit(1).catch(err => {
-      return { data: null, error: err };
-    });
+    const { data: challenges, error: challengesError } = await supabase.from('daily_challenges').select('id').limit(1);
     
     const responseTime = Date.now() - startTime;
     
