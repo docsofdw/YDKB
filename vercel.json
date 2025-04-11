@@ -26,5 +26,11 @@
   "env": {
     "NODE_VERSION": "18.19.0"
   },
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/daily-challenge/refresh",
+      "schedule": "0 0 * * *"
+    }
+  ]
 } 

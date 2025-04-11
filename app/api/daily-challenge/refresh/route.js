@@ -174,12 +174,9 @@ export async function GET(request) {
       return new Response(null, { status: 204, headers });
     }
     
-    // Check for API key
-    const { searchParams } = new URL(request.url);
-    const apiKey = searchParams.get('key');
-    
-    // Validate API key (use environment variable for security)
-    if (apiKey !== process.env.DAILY_CHALLENGE_API_KEY) {
+    // Check for Authorization header from Vercel Cron Job
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401, headers }
