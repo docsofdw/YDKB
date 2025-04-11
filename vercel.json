@@ -30,7 +30,7 @@
   "crons": [
     {
       "path": "/api/daily-challenge/refresh",
-      "schedule": "0 0 * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 } 
