@@ -3,9 +3,15 @@ const path = require('path');
 
 const nextConfig = {
     images: {
-      domains: ['api.placeholder.com', 'example.com'],
-      // Disable image optimization to avoid deployment issues
-      unoptimized: true,
+      domains: ['api.placeholder.com', 'example.com', 'ymgyzyfglszhxiukife.supabase.co'],
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'ymgyzyfglszhxiukife.supabase.co',
+          pathname: '/storage/v1/object/public/**',
+        },
+      ],
+      formats: ['image/avif', 'image/webp']
     },
     // Ensure proper handling of static files
     poweredByHeader: false,
@@ -22,13 +28,14 @@ const nextConfig = {
     experimental: {
       esmExternals: 'loose'
     },
-    // Simplify webpack config to avoid conflicts
-    webpack: (config) => {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@': path.resolve(__dirname)
-      };
-      return config;
+    // Module imports optimization
+    modularizeImports: {
+      'lucide-react': {
+        transform: 'lucide-react/dist/esm/icons/{{member}}'
+      },
+      'date-fns': {
+        transform: 'date-fns/{{member}}'
+      }
     },
     // Avoid trailing slash redirect issues
     trailingSlash: false,

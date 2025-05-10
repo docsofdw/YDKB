@@ -2,7 +2,7 @@
 
 Test your knowledge of NFL players' college careers in this daily guessing game, inspired by Immaculate Grid.
 
-![Game Preview](/public/api/placeholder/800/400)
+![Game Preview](/public/opengraph.png)
 
 ## 🎯 Game Features
 
@@ -47,11 +47,7 @@ This application is configured for deployment on Vercel. Follow these steps to d
    - `ADMIN_API_KEY`
    - `CRON_SECRET`
    - `THESPORTSDB_API_KEY`
-4. Deploy with the following settings:
-   - Build Command: `npm run build`
-   - Output Directory: `.next`
-   - Install Command: `npm install`
-   - Node.js Version: 18.x
+4. Deploy using the Vercel framework preset (automatic detection)
 
 For detailed documentation on Vercel deployment, visit [Vercel's Next.js documentation](https://vercel.com/docs/frameworks/nextjs).
 

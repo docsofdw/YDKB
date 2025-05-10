@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
-import { colleges } from '../lib/colleges';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface CollegeAutocompleteProps {
   value: string;
@@ -12,22 +12,42 @@ interface CollegeAutocompleteProps {
 export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' }: CollegeAutocompleteProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [collegesList, setCollegesList] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [mouseDownOnSuggestion, setMouseDownOnSuggestion] = useState(false);
-
-  // Update suggestions when value changes
+  
+  // Debounce the input value for searching
+  const debouncedValue = useDebounce(value, 150);
+  
+  // Dynamically load college list when component mounts
   useEffect(() => {
-    if (value.length > 0) {
-      const filtered = colleges.filter(college =>
-        college.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 5);
+    const loadColleges = async () => {
+      try {
+        const { colleges } = await import('../lib/colleges');
+        setCollegesList(colleges);
+      } catch (error) {
+        console.error("Failed to load colleges list:", error);
+        setCollegesList([]);
+      }
+    };
+    
+    loadColleges();
+  }, []);
+
+  // Update suggestions when debounced value changes
+  useEffect(() => {
+    if (debouncedValue.length > 0 && collegesList.length > 0) {
+      const filtered = collegesList
+        .filter(college => college.toLowerCase().includes(debouncedValue.toLowerCase()))
+        .slice(0, 5);
       setSuggestions(filtered);
     } else {
       setSuggestions([]);
     }
-  }, [value]);
+  }, [debouncedValue, collegesList]);
 
+  // Handle clicks outside the component
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) && 
@@ -43,15 +63,6 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     onChange(input);
-
-    if (input.length > 0) {
-      const filtered = colleges.filter(college =>
-        college.toLowerCase().includes(input.toLowerCase())
-      ).slice(0, 5);
-      setSuggestions(filtered);
-    } else {
-      setSuggestions([]);
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -142,11 +153,11 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
           onKeyDown={handleKeyDown}
           onFocus={() => {
             setIsFocused(true);
-            // Show suggestions if there's text
-            if (value.length > 0) {
-              const filtered = colleges.filter(college =>
-                college.toLowerCase().includes(value.toLowerCase())
-              ).slice(0, 5);
+            // Show suggestions if there's text and colleges are loaded
+            if (value.length > 0 && collegesList.length > 0) {
+              const filtered = collegesList
+                .filter(college => college.toLowerCase().includes(value.toLowerCase()))
+                .slice(0, 5);
               setSuggestions(filtered);
             }
           }}
@@ -164,7 +175,7 @@ export function CollegeAutocomplete({ value, onChange, onSubmit, className = '' 
             w-full h-12
             pl-11 pr-4
             text-base text-gray-100
-            bg-surface/40 backdrop-blur-md
+            bg-surface/40
             border border-gray-700/50
             rounded-xl
             placeholder:text-gray-500

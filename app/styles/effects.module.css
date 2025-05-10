@@ -1,0 +1,44 @@
+.glass {
+  @apply bg-surface/80 border-gray-700/50 border;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glassMobile {
+  @apply bg-surface/90 border-gray-700/50 border;
+}
+
+/* Use media query to apply different styles based on device capability */
+@media (hover: hover) {
+  .glass {
+    @apply backdrop-blur-md;
+  }
+}
+
+.primaryGradient {
+  @apply bg-gradient-to-r from-primary-green to-secondary-green;
+}
+
+.primaryGradientHover {
+  @apply hover:bg-gradient-to-r hover:from-primary-green hover:to-secondary-green;
+}
+
+.successGradient {
+  @apply bg-gradient-to-r from-success to-success/70;
+}
+
+.warningGradient {
+  @apply bg-gradient-to-r from-warning to-warning/70;
+}
+
+.errorGradient {
+  @apply bg-gradient-to-r from-error to-error/70;
+}
+
+.infoGradient {
+  @apply bg-gradient-to-r from-info to-info/70;
+}
+
+.textGradient {
+  @apply bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-primary-green to-secondary-green;
+} 

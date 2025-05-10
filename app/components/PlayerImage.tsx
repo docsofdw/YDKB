@@ -1,155 +1,128 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
+import { getPlayerImageUrl, supabaseImageLoader } from '@/app/lib/supabase-client';
 
 interface PlayerImageProps {
-  playerName: string;
-  size?: number;
+  playerId?: string | number;
+  playerName?: string;
+  alt?: string;
   className?: string;
+  priority?: boolean;
+  onLoad?: () => void;
+  size?: 'large' | 'medium' | 'small' | number;
 }
 
-interface PlayerData {
-  player_name: string;
-  image_url: string | null;
-  image_type: 'url' | 'initials';
-  initials: string | null;
-}
-
-/**
- * PlayerImage component that displays a player's image or initials as fallback
- */
-export default function PlayerImage({ playerName, size = 64, className = '' }: PlayerImageProps) {
-  const [playerData, setPlayerData] = useState<PlayerData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Generate random background color based on player name
-  const getBackgroundColor = (name: string) => {
-    // Simple hash function to generate a consistent color for the same name
-    const hash = name.split('').reduce((acc, char) => {
-      return char.charCodeAt(0) + ((acc << 5) - acc);
-    }, 0);
-    
-    // Generate HSL color with high saturation and medium lightness for good contrast
-    const h = Math.abs(hash % 360);
-    return `hsl(${h}, 65%, 55%)`;
-  };
-
-  useEffect(() => {
-    if (!playerName) {
-      setLoading(false);
-      return;
+const PlayerImage = React.memo(function PlayerImage({
+  playerId,
+  playerName,
+  alt,
+  className = "",
+  priority = false,
+  onLoad,
+  size = 'medium'
+}: PlayerImageProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
+  
+  // Determine the alt text
+  const imageAlt = alt || (playerName ? `Image of ${playerName}` : "Player image");
+  
+  // Get the image URL
+  const imageUrl = playerId 
+    ? getPlayerImageUrl(playerId)
+    : `/images/players/${playerName?.toLowerCase().replace(/\s+/g, '-')}.jpg`;
+  
+  // Fallback to a placeholder if needed
+  const fallbackUrl = '/images/player-placeholder.png';
+  
+  // Determine sizes based on the size prop
+  let width = 192;
+  let height = 192;
+  let sizeClass = '';
+  let sizesAttr = '';
+  
+  if (typeof size === 'number') {
+    // Handle numeric sizes
+    width = size;
+    height = size;
+    sizeClass = `w-[${size}px] h-[${size}px]`;
+    sizesAttr = `(max-width:600px) ${Math.min(size, 100)}vw, ${size}px`;
+  } else {
+    // Handle string sizes
+    switch (size) {
+      case 'large':
+        width = 240;
+        height = 240;
+        sizeClass = 'w-[240px] h-[240px]';
+        sizesAttr = '(max-width:600px) 80vw, 240px';
+        break;
+      case 'small':
+        width = 96;
+        height = 96;
+        sizeClass = 'w-[96px] h-[96px]';
+        sizesAttr = '(max-width:600px) 40vw, 96px';
+        break;
+      case 'medium':
+      default:
+        width = 192;
+        height = 192;
+        sizeClass = 'w-[192px] h-[192px]';
+        sizesAttr = '(max-width:600px) 60vw, 192px';
+        break;
     }
-
-    const fetchPlayerData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetch(`/api/player/${encodeURIComponent(playerName)}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch player data: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setPlayerData(data);
-      } catch (err) {
-        console.error('Error fetching player data:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        
-        // Create fallback data with initials
-        const initials = playerName
-          .split(' ')
-          .map(part => part.charAt(0))
-          .join('')
-          .toUpperCase();
-          
-        setPlayerData({
-          player_name: playerName,
-          image_url: null,
-          image_type: 'initials',
-          initials: initials
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPlayerData();
-  }, [playerName]);
-
-  if (loading) {
-    return (
-      <div 
-        className={`flex items-center justify-center bg-gray-200 rounded-full ${className}`}
-        style={{ width: size, height: size }}
-      >
-        <div className="animate-pulse bg-gray-300 rounded-full" style={{ width: size * 0.8, height: size * 0.8 }}></div>
-      </div>
-    );
   }
-
-  if (!playerData) {
-    return (
-      <div 
-        className={`flex items-center justify-center bg-gray-200 rounded-full ${className}`}
-        style={{ width: size, height: size }}
-      >
-        <span className="text-gray-500 font-bold" style={{ fontSize: size * 0.4 }}>?</span>
-      </div>
-    );
-  }
-
-  // If we have an image URL, display it
-  if (playerData.image_url) {
-    return (
-      <div 
-        className={`relative overflow-hidden rounded-full ${className}`}
-        style={{ width: size, height: size }}
-      >
-        <Image
-          src={playerData.image_url}
-          alt={playerData.player_name}
-          fill
-          sizes={`${size}px`}
-          className="object-cover"
-          onError={() => {
-            // If image fails to load, switch to initials
-            setPlayerData({
-              ...playerData,
-              image_url: null,
-              image_type: 'initials',
-              initials: playerData.player_name
-                .split(' ')
-                .map(part => part.charAt(0))
-                .join('')
-                .toUpperCase()
-            });
-          }}
-        />
-      </div>
-    );
-  }
-
-  // Fallback to initials
-  const initials = playerData.initials || playerData.player_name.charAt(0).toUpperCase();
-  const bgColor = getBackgroundColor(playerData.player_name);
-
+  
   return (
     <div 
-      className={`flex items-center justify-center rounded-full ${className}`}
-      style={{ 
-        width: size, 
-        height: size, 
-        backgroundColor: bgColor,
-        color: 'white',
-        fontSize: size * 0.4,
-        fontWeight: 'bold'
-      }}
+      className={`relative overflow-hidden rounded-lg ${className}`}
+      style={{ width: `${width}px`, height: `${height}px` }}
     >
-      {initials}
+      {isLoading && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+      )}
+      
+      {!imgError ? (
+        <Image
+          src={imageUrl}
+          alt={imageAlt}
+          fill
+          priority={priority}
+          sizes={sizesAttr}
+          loader={playerId ? supabaseImageLoader : undefined}
+          unoptimized={!playerId}
+          className={`
+            object-cover transition-opacity duration-300
+            ${isLoading ? 'opacity-0' : 'opacity-100'}
+          `}
+          onLoad={() => {
+            setIsLoading(false);
+            if (onLoad) onLoad();
+          }}
+          onError={() => {
+            console.log("Image error, falling back to standard img tag");
+            setImgError(true);
+          }}
+        />
+      ) : (
+        // Fallback to regular img tag if Next/Image fails
+        <img
+          src={imageUrl}
+          alt={imageAlt}
+          className="object-cover w-full h-full"
+          onError={(e) => {
+            // Use placeholder if the direct image also fails
+            e.currentTarget.src = fallbackUrl;
+          }}
+          onLoad={() => {
+            setIsLoading(false);
+            if (onLoad) onLoad();
+          }}
+        />
+      )}
     </div>
   );
-} 
+});
+
+export default PlayerImage; 

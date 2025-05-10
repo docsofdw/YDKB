@@ -3,10 +3,13 @@
 module.exports = {
     darkMode: ["class"],
     content: [
-      './pages/**/*.{ts,tsx,js,jsx}',
-      './components/**/*.{ts,tsx,js,jsx}',
-      './app/**/*.{ts,tsx,js,jsx}',
-      './src/**/*.{ts,tsx,js,jsx}',
+      './pages/**/*.{ts,tsx}',
+      './components/**/*.{ts,tsx}',
+      './app/**/*.{ts,tsx}',
+    ],
+    safelist: [
+      /^bg-(success|warning|error|info)/,
+      /^text-(success|warning|error|info)/
     ],
     prefix: "",
     theme: {
@@ -23,24 +26,18 @@ module.exports = {
       },
       extend: {
         colors: {
-          // Primary Colors
-          background: "#121214",
-          surface: "#1E1E22",
-          "primary-green": "#4ADE80",
-          "secondary-green": "#22C55E",
-          
-          // Secondary Colors
-          "gray-100": "#F4F4F5",
-          "gray-300": "#D4D4D8",
-          "gray-500": "#71717A",
-          "gray-700": "#3F3F46",
-          "gray-800": "#27272A",
+          // CSS HSL variables for base colors
+          "theme-surface": "var(--surface)",
+          "theme-primary": "var(--primary)",
+          "theme-secondary": "var(--secondary)",
+          "theme-text": "var(--text)",
+          "theme-muted": "var(--muted)",
           
           // Semantic Colors
-          success: "#4ADE80",
-          warning: "#FACC15",
-          error: "#EF4444",
-          info: "#3B82F6",
+          "theme-success": "#4ADE80",
+          "theme-warning": "#FACC15",
+          "theme-error": "#EF4444",
+          "theme-info": "#3B82F6",
           
           // Legacy shadcn colors - keeping for compatibility
           border: "hsl(var(--border))",
@@ -126,6 +123,7 @@ module.exports = {
           'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
           'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
           'green-glow': '0 0 15px rgba(74, 222, 128, 0.5)',
+          'theme-green-glow': '0 0 15px rgba(74, 222, 128, 0.5)',
         },
         keyframes: {
           "accordion-down": {

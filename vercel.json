@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
   "github": {
     "silent": true
   },
@@ -21,16 +20,24 @@
           "value": "1; mode=block"
         }
       ]
+    },
+    {
+      "source": "/_next/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ],
   "env": {
     "NODE_VERSION": "18.19.0"
   },
-  "regions": ["iad1"],
   "crons": [
     {
       "path": "/api/daily-challenge/refresh",
-      "schedule": "0 8 * * *"
+      "schedule": "0 5 * * *"
     }
   ]
-} 
+}

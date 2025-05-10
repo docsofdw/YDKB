@@ -455,6 +455,16 @@ interface QuestionHistoryData {
 
 export async function saveUserGameHistory(gameData: GameHistoryData) {
   try {
+    // Check if we're in a browser environment
+    const isBrowser = typeof window !== 'undefined';
+    
+    // For server-side execution, just return success without attempting to save
+    // This is a temporary fix to prevent errors during SSR
+    if (!isBrowser) {
+      console.log('Skipping game history save on server');
+      return { success: true, gameId: 'server-side' };
+    }
+
     const supabase = createSafeClient();
     const { userId } = await auth();
 
@@ -505,6 +515,16 @@ export async function saveUserGameHistory(gameData: GameHistoryData) {
 
 export async function saveUserQuestionHistory(gameId: string, questionsData: QuestionHistoryData[]) {
   try {
+    // Check if we're in a browser environment
+    const isBrowser = typeof window !== 'undefined';
+    
+    // For server-side execution, just return success without attempting to save
+    // This is a temporary fix to prevent errors during SSR
+    if (!isBrowser) {
+      console.log('Skipping question history save on server');
+      return { success: true };
+    }
+
     const supabase = createSafeClient();
     const { userId } = await auth();
 
@@ -548,6 +568,15 @@ export async function saveUserQuestionHistory(gameId: string, questionsData: Que
 }
 
 async function updateUserStats(userId: string, gameData: GameHistoryData) {
+  // Check if we're in a browser environment
+  const isBrowser = typeof window !== 'undefined';
+  
+  // Skip on server-side
+  if (!isBrowser) {
+    console.log('Skipping user stats update on server');
+    return;
+  }
+
   const supabase = createSafeClient();
 
   try {

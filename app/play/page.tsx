@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CalendarDays, Clock, Trophy, History, Play, ArrowLeft, Timer, Search } from "lucide-react";
 import Link from "next/link";
 import { Progress } from "@/app/components/ui/progress";
-import { getTodaysChallengePlayer, type Player } from '@/app/lib/supabase-client';
+import { getTodaysChallengePlayer, type Player, getPlayerImageUrl } from '@/app/lib/supabase-client';
 import { saveUserGameHistory, saveUserQuestionHistory } from '@/app/lib/user-actions';
 import { CollegeAutocomplete } from "@/app/components/CollegeAutocomplete";
 import PlayerImage from '@/app/components/PlayerImage';
@@ -98,18 +98,20 @@ export default function PlayPage() {
   const [isClient, setIsClient] = useState(false);
   const [quizState, setQuizState] = useState<QuizState>('intro');
   const [quizProgress, setQuizProgress] = useState<QuizProgress>(INITIAL_QUIZ_PROGRESS);
-  const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
-  const [userAnswer, setUserAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [timeIsUp, setTimeIsUp] = useState(false);
   
-  // Track if the game has been initialized with a game ID
-  const gameInitialized = useRef(false);
+  // Use refs for values that don't need to trigger re-renders
+  const userAnswerRef = useRef<string>('');
+  const rafIdRef = useRef<number | null>(null);
+  const playersRef = useRef<Record<string, Player>>({});
+  const timeTakenRef = useRef<number>(0);
+  const gameInitialized = useRef<boolean>(false);
   
   useEffect(() => {
     setIsClient(true);
     return () => {
-      if (timer) clearInterval(timer);
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
   }, []);
 
@@ -122,7 +124,7 @@ export default function PlayPage() {
     
     if (quizProgress.elapsedTime >= timeLimit) {
       setTimeIsUp(true);
-      if (timer) clearInterval(timer);
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       
       // Auto-submit "I don't know" after time is up
       handleTimeUp();
@@ -136,178 +138,35 @@ export default function PlayPage() {
   const startTimer = () => {
     setQuizProgress(prev => ({ ...prev, elapsedTime: 0 }));
     setTimeIsUp(false);
-    const newTimer = setInterval(() => {
-      setQuizProgress(prev => ({
-        ...prev,
-        elapsedTime: prev.elapsedTime + 1
-      }));
-    }, 1000);
-    setTimer(newTimer);
-  };
-
-  // Handle when time is up for a question
-  const handleTimeUp = async () => {
-    const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
-    const currentPlayer = quizProgress.players[currentDifficulty];
-    const timeTaken = TIME_LIMITS[currentDifficulty]; // Use max time when time is up
     
-    // Update quiz progress
-    setQuizProgress(prev => {
-      const updatedResults = { ...prev.results };
-      updatedResults[currentDifficulty] = false;
+    let startTime = performance.now();
+    
+    const tick = (timestamp: number) => {
+      const elapsedSeconds = Math.floor((timestamp - startTime) / 1000);
       
-      const updatedAnswers = { ...prev.answers };
-      updatedAnswers[currentDifficulty] = "Time's up";
-      
-      const updatedTimeTaken = { ...prev.timeTaken };
-      updatedTimeTaken[currentDifficulty] = timeTaken;
-      
-      return {
-        ...prev,
-        results: updatedResults,
-        answers: updatedAnswers,
-        timeTaken: updatedTimeTaken
-      };
-    });
-    
-    // Move to next question or complete quiz
-    const nextState = {
-      easy: 'hard',
-      hard: 'hof',
-      hof: 'summary'
-    }[currentDifficulty];
-    
-    // Save the result to user history if we have a game ID
-    if (isSignedIn && currentPlayer && quizProgress.gameId) {
-      try {
-        await saveUserQuestionHistory(quizProgress.gameId, [{
-          game_id: quizProgress.gameId,
-          player_id: currentPlayer.id,
-          answered_correctly: false,
-          time_taken: timeTaken,
-        }]);
-      } catch (error) {
-        console.error('Error saving question history:', error);
-      }
-    }
-    
-    if (nextState === 'summary') {
-      // Complete the quiz and show summary
-      setQuizState('summary');
-      
-      // Save final game history if not already saved
-      if (isSignedIn && !quizProgress.gameId) {
-        try {
-          const totalTimeTaken = Object.values(quizProgress.timeTaken).reduce((sum, time) => sum + (time || 0), 0) + timeTaken;
-          const correctCount = Object.values(quizProgress.results).filter(Boolean).length;
-          
-          const gameData = {
-            game_date: new Date().toISOString(),
-            score: correctCount,
-            correct_answers: correctCount,
-            total_questions: 3,
-            time_taken: totalTimeTaken,
-            difficulty: 'daily'
-          };
-          
-          await saveUserGameHistory(gameData);
-        } catch (error) {
-          console.error('Error saving final game history:', error);
-        }
-      }
-    } else {
-      // Move to next question
-      setUserAnswer('');
-      setQuizState(nextState as QuizState);
-      startTimer();
-    }
-  };
-
-  const loadDailyChallenge = async () => {
-    setIsLoading(true);
-    try {
-      console.log('Loading daily challenge players...');
-      // Load all three difficulty levels
-      const [easyPlayer, hardPlayer, hofPlayer] = await Promise.all([
-        getTodaysChallengePlayer('easy'),
-        getTodaysChallengePlayer('hard'),
-        getTodaysChallengePlayer('hof')
-      ]);
-
-      console.log('Loaded players:', {
-        easy: easyPlayer,
-        hard: hardPlayer,
-        hof: hofPlayer
-      });
-
-      setQuizProgress(prev => ({
-        ...prev,
-        players: {
-          easy: easyPlayer,
-          hard: hardPlayer,
-          hof: hofPlayer
-        }
-      }));
-    } catch (error) {
-      console.error('Error loading daily challenge:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStartQuiz = async () => {
-    console.log('Starting quiz...');
-    await loadDailyChallenge();
-    console.log('Setting initial quiz state...');
-    
-    // Initialize game record if user is signed in
-    if (isSignedIn) {
-      try {
-        const gameData = {
-          game_date: new Date().toISOString(),
-          score: 0,
-          correct_answers: 0,
-          total_questions: 3,
-          time_taken: 0,
-          difficulty: 'daily'
-        };
-        
-        const gameResult = await saveUserGameHistory(gameData);
-        
-        if (gameResult.success && gameResult.gameId) {
-          setQuizProgress(prev => ({
-            ...INITIAL_QUIZ_PROGRESS,
-            players: prev.players,
-            gameId: gameResult.gameId
-          }));
-          
-          gameInitialized.current = true;
-        } else {
-          setQuizProgress(prev => ({
-            ...INITIAL_QUIZ_PROGRESS,
-            players: prev.players
-          }));
-        }
-      } catch (error) {
-        console.error('Error initializing game record:', error);
+      if (elapsedSeconds !== quizProgress.elapsedTime) {
         setQuizProgress(prev => ({
-          ...INITIAL_QUIZ_PROGRESS,
-          players: prev.players
+          ...prev,
+          elapsedTime: elapsedSeconds
         }));
       }
-    } else {
-      setQuizProgress(prev => ({
-        ...INITIAL_QUIZ_PROGRESS,
-        players: prev.players
-      }));
-    }
+      
+      rafIdRef.current = requestAnimationFrame(tick);
+    };
     
-    setQuizState('easy');
-    startTimer();
+    rafIdRef.current = requestAnimationFrame(tick);
+  };
+
+  const handleUserAnswerChange = (value: string) => {
+    // Store in ref instead of state to prevent re-renders on every keystroke
+    userAnswerRef.current = value;
   };
 
   const handleSubmitAnswer = async () => {
-    if (timer) clearInterval(timer);
+    // Only at submission time, get the value from the ref
+    const userAnswer = userAnswerRef.current;
+    
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     
     const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
     const currentPlayer = quizProgress.players[currentDifficulty];
@@ -427,10 +286,174 @@ export default function PlayPage() {
       
       setQuizState('summary');
     } else {
-      setUserAnswer('');
+      userAnswerRef.current = '';
       setQuizState(nextState as QuizState);
       startTimer(); // Start new timer for next question
     }
+  };
+
+  const handleTimeUp = async () => {
+    const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
+    const currentPlayer = quizProgress.players[currentDifficulty];
+    const timeTaken = TIME_LIMITS[currentDifficulty]; // Use max time when time is up
+    
+    // Update quiz progress
+    setQuizProgress(prev => {
+      const updatedResults = { ...prev.results };
+      updatedResults[currentDifficulty] = false;
+      
+      const updatedAnswers = { ...prev.answers };
+      updatedAnswers[currentDifficulty] = "Time's up";
+      
+      const updatedTimeTaken = { ...prev.timeTaken };
+      updatedTimeTaken[currentDifficulty] = timeTaken;
+      
+      return {
+        ...prev,
+        results: updatedResults,
+        answers: updatedAnswers,
+        timeTaken: updatedTimeTaken
+      };
+    });
+    
+    // Move to next question or complete quiz
+    const nextState = {
+      easy: 'hard',
+      hard: 'hof',
+      hof: 'summary'
+    }[currentDifficulty];
+    
+    // Save the result to user history if we have a game ID
+    if (isSignedIn && currentPlayer && quizProgress.gameId) {
+      try {
+        await saveUserQuestionHistory(quizProgress.gameId, [{
+          game_id: quizProgress.gameId,
+          player_id: currentPlayer.id,
+          answered_correctly: false,
+          time_taken: timeTaken,
+        }]);
+      } catch (error) {
+        console.error('Error saving question history:', error);
+      }
+    }
+    
+    if (nextState === 'summary') {
+      // Complete the quiz and show summary
+      setQuizState('summary');
+      
+      // Save final game history if not already saved
+      if (isSignedIn && !quizProgress.gameId) {
+        try {
+          const totalTimeTaken = Object.values(quizProgress.timeTaken).reduce((sum, time) => sum + (time || 0), 0) + timeTaken;
+          const correctCount = Object.values(quizProgress.results).filter(Boolean).length;
+          
+          const gameData = {
+            game_date: new Date().toISOString(),
+            score: correctCount,
+            correct_answers: correctCount,
+            total_questions: 3,
+            time_taken: totalTimeTaken,
+            difficulty: 'daily'
+          };
+          
+          await saveUserGameHistory(gameData);
+        } catch (error) {
+          console.error('Error saving final game history:', error);
+        }
+      }
+    } else {
+      // Move to next question
+      userAnswerRef.current = '';
+      setQuizState(nextState as QuizState);
+      startTimer();
+    }
+  };
+
+  const loadDailyChallenge = async () => {
+    setIsLoading(true);
+    try {
+      console.log('Loading daily challenge players...');
+      // Load all three difficulty levels
+      const [easyPlayer, hardPlayer, hofPlayer] = await Promise.all([
+        getTodaysChallengePlayer('easy'),
+        getTodaysChallengePlayer('hard'),
+        getTodaysChallengePlayer('hof')
+      ]);
+
+      console.log('Loaded players:', {
+        easy: easyPlayer,
+        hard: hardPlayer,
+        hof: hofPlayer
+      });
+
+      setQuizProgress(prev => ({
+        ...prev,
+        players: {
+          easy: easyPlayer,
+          hard: hardPlayer,
+          hof: hofPlayer
+        }
+      }));
+    } catch (error) {
+      console.error('Error loading daily challenge:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartQuiz = async () => {
+    console.log('Starting quiz...');
+    await loadDailyChallenge();
+    console.log('Setting initial quiz state...');
+    
+    // Initialize game record if user is signed in
+    if (isSignedIn) {
+      try {
+        const gameData = {
+          game_date: new Date().toISOString(),
+          score: 0,
+          correct_answers: 0,
+          total_questions: 3,
+          time_taken: 0,
+          difficulty: 'daily'
+        };
+        
+        const gameResult = await saveUserGameHistory(gameData);
+        
+        if (gameResult.success && gameResult.gameId) {
+          setQuizProgress(prev => ({
+            ...INITIAL_QUIZ_PROGRESS,
+            players: prev.players,
+            gameId: gameResult.gameId
+          }));
+          
+          gameInitialized.current = true;
+        } else {
+          setQuizProgress(prev => ({
+            ...INITIAL_QUIZ_PROGRESS,
+            players: prev.players
+          }));
+        }
+      } catch (error) {
+        console.error('Error initializing game record:', error);
+        setQuizProgress(prev => ({
+          ...INITIAL_QUIZ_PROGRESS,
+          players: prev.players
+        }));
+      }
+    } else {
+      setQuizProgress(prev => ({
+        ...INITIAL_QUIZ_PROGRESS,
+        players: prev.players
+      }));
+    }
+    
+    setQuizState('easy');
+    startTimer();
+  };
+
+  const handleSkipQuestion = () => {
+    // Implementation of handleSkipQuestion
   };
 
   const formatTime = (seconds: number) => {
@@ -454,36 +477,39 @@ export default function PlayPage() {
                       'var(--error)'
     };
     
+    const shouldReduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
     return (
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6 space-y-4"
-      >
+      <div className="mb-6 space-y-4">
         <div className="flex justify-between items-center text-sm text-gray-300">
           <span>Question {quizProgress.currentQuestion + 1} of {quizProgress.totalQuestions}</span>
           <div className="flex items-center gap-2">
             <Timer className="w-4 h-4" />
-            <span className={timeRemaining < 10 ? "text-error animate-pulse" : ""}>
+            <span 
+              className={timeRemaining < 10 ? "text-error" : ""}
+              aria-live={timeRemaining < 10 ? "assertive" : "off"}
+            >
               {formatTime(timeRemaining)}
             </span>
           </div>
         </div>
         
-        <div className={`relative h-2 w-full overflow-hidden rounded-full ${
-          timePercentage > 66 ? 'bg-success/20' : 
-          timePercentage > 33 ? 'bg-warning/20' : 
-          'bg-error/20'
-        }`}>
+        <div 
+          className={`relative h-2 w-full overflow-hidden rounded-full ${
+            timePercentage > 66 ? 'bg-success/20' : 
+            timePercentage > 33 ? 'bg-warning/20' : 
+            'bg-error/20'
+          }`}
+        >
           <div 
-            className="h-full w-full flex-1 transition-all"
+            className={`h-full w-full flex-1 ${!shouldReduceMotion ? 'transition-all' : ''}`}
             style={{
               ...indicatorStyle,
               transform: `translateX(-${100 - timePercentage}%)`
             }}
           />
         </div>
-      </motion.div>
+      </div>
     );
   };
 
@@ -494,7 +520,7 @@ export default function PlayPage() {
     const timePercentage = (timeRemaining / timeLimit) * 100;
 
     return (
-      <Card className="w-full glass">
+      <Card className="w-full bg-surface/80 border-gray-700/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -510,10 +536,11 @@ export default function PlayPage() {
             {quizState === 'easy' && (
               <button
                 onClick={() => {
-                  if (timer) clearInterval(timer);
+                  if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
                   setQuizState('intro');
                 }}
-                className="text-gray-300 hover:text-primary-green p-2 rounded-full transition-colors duration-200"
+                className="text-gray-300 hover:text-primary-green p-2 rounded-full transition-colors duration-200 min-h-12 min-w-12"
+                aria-label="Back to intro"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -523,159 +550,70 @@ export default function PlayPage() {
         
         {renderProgressBar()}
         
-        <CardContent className="space-y-6">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-6 text-gray-100">
-              {currentPlayer?.name ? 
-                `Where did ${currentPlayer.name} go to college?` :
-                'Loading question...'}
-            </h2>
-            <div className="mb-6">
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-6 items-center">
+            <div className="w-full md:w-auto flex justify-center">
               <PlayerImage 
-                playerName={currentPlayer?.name || ''} 
-                size={192} 
-                className="mx-auto h-48 w-48 object-cover rounded-xl shadow-lg border border-gray-700"
+                playerId={currentPlayer.id}
+                playerName={currentPlayer.name}
+                alt={`NFL Player`}
+                priority={quizState === 'easy'}
+                onLoad={() => {
+                  // Prefetch next difficulty's player image when current image loads
+                  if (quizState === 'easy') {
+                    // Prefetch 'hard' difficulty player
+                    const hardPlayer = quizProgress.players.hard;
+                    if (hardPlayer && hardPlayer.id) {
+                      const img = new Image();
+                      img.src = getPlayerImageUrl(hardPlayer.id);
+                    }
+                  } else if (quizState === 'hard') {
+                    // Prefetch 'hof' difficulty player
+                    const hofPlayer = quizProgress.players.hof;
+                    if (hofPlayer && hofPlayer.id) {
+                      const img = new Image();
+                      img.src = getPlayerImageUrl(hofPlayer.id);
+                    }
+                  }
+                }}
+                size="large"
               />
             </div>
-            <div className="max-w-sm mx-auto">
-              {timeIsUp ? (
-                <div className="relative glass-input-container opacity-50">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                    <Search className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    value={userAnswer || "Time's up!"}
-                    readOnly
-                    className="w-full h-12 pl-11 pr-4 text-base text-gray-100 bg-surface/40 backdrop-blur-md border border-gray-700/50 rounded-xl"
-                  />
-                </div>
-              ) : (
+            
+            <div className="w-full space-y-4">
+              <p className="text-lg font-medium text-center md:text-left">
+                Which college did this player attend?
+              </p>
+              
+              <div className="flex flex-col gap-3">
                 <CollegeAutocomplete
-                  value={userAnswer}
-                  onChange={setUserAnswer}
+                  value={userAnswerRef.current}
+                  onChange={handleUserAnswerChange}
                   onSubmit={handleSubmitAnswer}
-                  className="relative glass-input-container"
+                  className="w-full"
                 />
-              )}
+                
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={handleSubmitAnswer}
+                    className="flex-1 min-h-12"
+                    disabled={!userAnswerRef.current.trim()}
+                  >
+                    Submit
+                  </Button>
+                  
+                  <Button
+                    onClick={handleSkipQuestion}
+                    variant="outline"
+                    className="flex-1 min-h-12"
+                  >
+                    Skip
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
-        <CardFooter>
-          <div className="flex flex-col w-full gap-2">
-            <button 
-              onClick={handleSubmitAnswer}
-              className={`glass-button-primary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border text-gray-100 font-medium transition-all duration-300 ${
-                !userAnswer.trim() || timeIsUp ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
-              } ${
-                quizState === 'easy' ? 'bg-success/20 border-success/30 hover:bg-success/30 hover:border-success/50 hover:shadow-success/20' :
-                quizState === 'hard' ? 'bg-warning/20 border-warning/30 hover:bg-warning/30 hover:border-warning/50 hover:shadow-warning/20' :
-                'bg-info/20 border-info/30 hover:bg-info/30 hover:border-info/50 hover:shadow-info/20'
-              }`}
-              disabled={!userAnswer.trim() || timeIsUp}
-            >
-              <span>Submit Answer</span>
-              <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
-                quizState === 'easy' ? 'bg-gradient-to-r from-success/10 to-success/5' :
-                quizState === 'hard' ? 'bg-gradient-to-r from-warning/10 to-warning/5' :
-                'bg-gradient-to-r from-info/10 to-info/5'
-              }`}></div>
-            </button>
-            
-            <button 
-              onClick={() => {
-                // Set a default "I don't know" answer
-                setUserAnswer("I don't know");
-                
-                // Handle the submission as incorrect
-                const currentDifficulty = quizState as 'easy' | 'hard' | 'hof';
-                const currentPlayer = quizProgress.players[currentDifficulty];
-                const timeTaken = quizProgress.elapsedTime;
-                
-                // Update quiz progress
-                setQuizProgress(prev => {
-                  const updatedResults = { ...prev.results };
-                  updatedResults[currentDifficulty] = false;
-                  
-                  const updatedAnswers = { ...prev.answers };
-                  updatedAnswers[currentDifficulty] = "I don't know";
-                  
-                  const updatedTimeTaken = { ...prev.timeTaken };
-                  updatedTimeTaken[currentDifficulty] = timeTaken;
-                  
-                  return {
-                    ...prev,
-                    currentQuestion: prev.currentQuestion + 1,
-                    results: updatedResults,
-                    answers: updatedAnswers,
-                    timeTaken: updatedTimeTaken
-                  };
-                });
-                
-                // Save the result to user history
-                if (isSignedIn && currentPlayer && quizProgress.gameId) {
-                  saveUserQuestionHistory(quizProgress.gameId, [{
-                    game_id: quizProgress.gameId,
-                    player_id: currentPlayer.id,
-                    answered_correctly: false,
-                    time_taken: timeTaken,
-                  }]).catch(console.error);
-                }
-                
-                // Move to the next difficulty or summary
-                if (timer) clearInterval(timer);
-                
-                if (currentDifficulty === 'easy') {
-                  setQuizState('hard');
-                  setUserAnswer(''); // Reset user answer when moving to next question
-                  startTimer();
-                } else if (currentDifficulty === 'hard') {
-                  setQuizState('hof');
-                  setUserAnswer(''); // Reset user answer when moving to next question
-                  startTimer();
-                } else {
-                  // Complete the quiz and show summary
-                  setQuizState('summary');
-                  
-                  // Save final game history
-                  if (isSignedIn && quizProgress.gameId) {
-                    const correctCount = Object.values(quizProgress.results).filter(Boolean).length;
-                    const totalTime = Object.values(quizProgress.timeTaken).reduce((sum, time) => sum + (time || 0), 0);
-                    
-                    // Only pass the fields that saveUserGameHistory expects
-                    saveUserGameHistory({
-                      game_date: new Date().toISOString(),
-                      score: correctCount,
-                      correct_answers: correctCount,
-                      total_questions: 3,
-                      time_taken: totalTime,
-                      difficulty: 'daily',
-                    }).catch(console.error);
-                  }
-                }
-              }}
-              className={`glass-button-secondary group relative flex items-center justify-center gap-2 w-full sm:w-[200px] mx-auto text-base px-4 py-2.5 rounded-full backdrop-blur-md border font-medium transition-all duration-300 hover:shadow-lg ${
-                timeIsUp ? 'opacity-50 cursor-not-allowed' : ''
-              } ${
-                quizState === 'easy' ? 'text-gray-300 border-success/20 hover:border-success/30 hover:text-gray-100' :
-                quizState === 'hard' ? 'text-gray-300 border-warning/20 hover:border-warning/30 hover:text-gray-100' :
-                'text-gray-300 border-info/20 hover:border-info/30 hover:text-gray-100'
-              }`}
-              style={{
-                background: 'rgba(25, 25, 30, 0.5)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
-              }}
-              disabled={timeIsUp}
-            >
-              <span>I don't know ball</span>
-              <div className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur ${
-                quizState === 'easy' ? 'bg-gradient-to-r from-success/5 to-success/0' :
-                quizState === 'hard' ? 'bg-gradient-to-r from-warning/5 to-warning/0' :
-                'bg-gradient-to-r from-info/5 to-info/0'
-              }`}></div>
-            </button>
-          </div>
-        </CardFooter>
       </Card>
     );
   };
@@ -718,7 +656,8 @@ export default function PlayPage() {
                     <div className="flex items-start gap-4">
                       {player && (
                         <PlayerImage 
-                          playerName={player.name} 
+                          playerId={player.id} 
+                          playerName={player.name}
                           size={64} 
                           className="w-16 h-16 object-cover rounded-lg border border-gray-700"
                         />

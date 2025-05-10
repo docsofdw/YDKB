@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Progress } from '@/app/components/ui/progress';
-import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import React from 'react';
+import dynamic from 'next/dynamic';
+import SpriteIcon from '@/app/components/ui/SpriteIcon';
+
+// Import QuizResults as server component
+import QuizResults from './QuizResults';
 
 type QuizOption = {
   id: string;
@@ -32,35 +37,77 @@ type QuizInterfaceProps = {
   quizType: 'daily' | 'onDemand';
 };
 
+// Memoized option row component
+const OptionRow = React.memo(({ 
+  option, 
+  isSelected, 
+  onSelect 
+}: { 
+  option: QuizOption; 
+  isSelected: boolean; 
+  onSelect: (id: string) => void;
+}) => (
+  <button
+    key={option.id}
+    className={`w-full text-left p-4 rounded-lg border transition-colors ${
+      isSelected
+        ? 'bg-blue-50 border-blue-300'
+        : 'bg-white border-gray-200 hover:bg-gray-50'
+    }`}
+    onClick={() => onSelect(option.id)}
+  >
+    {option.text}
+  </button>
+));
+
+OptionRow.displayName = 'OptionRow';
+
 export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const selectedOptionIdRef = useRef<string | null>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const answersRef = useRef<Record<string, string>>({});
   const [timeRemaining, setTimeRemaining] = useState(quiz.timeLimit);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [timeSpent, setTimeSpent] = useState(0);
   
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const totalQuestions = quiz.questions.length;
   const progress = (currentQuestionIndex / totalQuestions) * 100;
   
-  // Timer effect
+  // Force update function for when we need to update the UI after ref changes
+  const [, forceUpdate] = useState({});
+  const triggerUpdate = useCallback(() => forceUpdate({}), []);
+  
+  // Timer effect with requestAnimationFrame
   useEffect(() => {
     if (quizCompleted) return;
     
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleQuizComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    let raf: number;
+    const start = performance.now();
     
-    return () => clearInterval(timer);
-  }, [quizCompleted]);
+    const tick = (timestamp: number) => {
+      const elapsedSeconds = Math.floor((timestamp - start) / 1000);
+      const newTimeRemaining = Math.max(0, quiz.timeLimit - elapsedSeconds);
+      
+      setTimeRemaining(newTimeRemaining);
+      setTimeSpent(quiz.timeLimit - newTimeRemaining);
+      
+      if (newTimeRemaining <= 0) {
+        handleQuizComplete();
+        return;
+      }
+      
+      raf = requestAnimationFrame(tick);
+    };
+    
+    raf = requestAnimationFrame(tick);
+    
+    return () => {
+      cancelAnimationFrame(raf);
+    };
+  }, [quizCompleted, quiz.timeLimit]);
   
   // Format time remaining
   const formatTime = (seconds: number) => {
@@ -70,21 +117,23 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
   };
   
   const handleSelectOption = (optionId: string) => {
-    setSelectedOptionId(optionId);
+    selectedOptionIdRef.current = optionId;
+    setSelectedOptionId(optionId); // Keep this for UI updates
   };
   
   const handleNextQuestion = () => {
     // Save the answer
-    if (selectedOptionId) {
-      setAnswers((prev) => ({
-        ...prev,
-        [currentQuestion.id]: selectedOptionId
-      }));
+    if (selectedOptionIdRef.current) {
+      answersRef.current = {
+        ...answersRef.current,
+        [currentQuestion.id]: selectedOptionIdRef.current
+      };
     }
     
     // Move to next question or complete quiz
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
+      selectedOptionIdRef.current = null;
       setSelectedOptionId(null);
     } else {
       handleQuizComplete();
@@ -93,11 +142,11 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
   
   const handleQuizComplete = () => {
     // Save the last answer if selected
-    if (selectedOptionId && !answers[currentQuestion.id]) {
-      setAnswers((prev) => ({
-        ...prev,
-        [currentQuestion.id]: selectedOptionId
-      }));
+    if (selectedOptionIdRef.current && !answersRef.current[currentQuestion.id]) {
+      answersRef.current = {
+        ...answersRef.current,
+        [currentQuestion.id]: selectedOptionIdRef.current
+      };
     }
     
     setQuizCompleted(true);
@@ -108,7 +157,7 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
     let correctCount = 0;
     
     quiz.questions.forEach((question) => {
-      const userAnswer = answers[question.id];
+      const userAnswer = answersRef.current[question.id];
       if (userAnswer && userAnswer === question.correctOptionId) {
         correctCount++;
       }
@@ -122,74 +171,7 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
   };
   
   if (showResults) {
-    const score = calculateScore();
-    
-    return (
-      <Card className="quiz-results">
-        <CardHeader>
-          <CardTitle>Quiz Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center mb-6">
-            <div className="text-6xl font-bold mb-2">{score.percentage}%</div>
-            <p className="text-xl">
-              You got {score.correct} out of {score.total} questions correct
-            </p>
-            <p className="text-muted-foreground mt-2">
-              Time spent: {formatTime(quiz.timeLimit - timeRemaining)}
-            </p>
-          </div>
-          
-          <div className="space-y-4">
-            {quiz.questions.map((question, index) => {
-              const userAnswer = answers[question.id] || '';
-              const isCorrect = userAnswer === question.correctOptionId;
-              
-              return (
-                <div key={question.id} className={`p-4 rounded-lg ${isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
-                  <div className="flex items-start gap-2">
-                    {isCorrect ? (
-                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                    )}
-                    <div>
-                      <p className="font-medium">
-                        {index + 1}. {question.text}
-                      </p>
-                      <div className="mt-2 space-y-1">
-                        {question.options.map((option) => {
-                          const isUserSelection = userAnswer === option.id;
-                          const isCorrectOption = option.id === question.correctOptionId;
-                          
-                          let optionClass = 'text-gray-500';
-                          if (isUserSelection && isCorrectOption) optionClass = 'text-green-600 font-medium';
-                          else if (isUserSelection) optionClass = 'text-red-600 font-medium';
-                          else if (isCorrectOption) optionClass = 'text-green-600 font-medium';
-                          
-                          return (
-                            <p key={option.id} className={optionClass}>
-                              {option.text} 
-                              {isCorrectOption && ' ✓'}
-                              {isUserSelection && !isCorrectOption && ' ✗'}
-                            </p>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Link href="/play" className="w-full">
-            <Button className="w-full">Return to Play</Button>
-          </Link>
-        </CardFooter>
-      </Card>
-    );
+    return <QuizResults quiz={quiz} answers={answersRef.current} timeSpent={timeSpent} />;
   }
   
   return (
@@ -198,7 +180,7 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
         <div className="flex justify-between items-center">
           <CardTitle>{quiz.title}</CardTitle>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
+            <SpriteIcon id="clock" size={16} />
             <span className="font-mono">{formatTime(timeRemaining)}</span>
           </div>
         </div>
@@ -213,17 +195,12 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
           
           <div className="space-y-3">
             {currentQuestion.options.map((option) => (
-              <button
+              <OptionRow 
                 key={option.id}
-                className={`w-full text-left p-4 rounded-lg border transition-colors ${
-                  selectedOptionId === option.id
-                    ? 'bg-blue-50 border-blue-300'
-                    : 'bg-white border-gray-200 hover:bg-gray-50'
-                }`}
-                onClick={() => handleSelectOption(option.id)}
-              >
-                {option.text}
-              </button>
+                option={option}
+                isSelected={selectedOptionId === option.id}
+                onSelect={handleSelectOption}
+              />
             ))}
           </div>
         </div>
@@ -239,13 +216,14 @@ export default function QuizInterface({ quiz, quizType }: QuizInterfaceProps) {
         <Button 
           onClick={() => {
             // Mark this question as incorrect
-            const updatedAnswers = { ...answers };
+            const updatedAnswers = { ...answersRef.current };
             updatedAnswers[currentQuestion.id] = 'skip';
-            setAnswers(updatedAnswers);
+            answersRef.current = updatedAnswers;
             
             // Move to next question or complete quiz
             if (currentQuestionIndex < totalQuestions - 1) {
               setCurrentQuestionIndex(currentQuestionIndex + 1);
+              selectedOptionIdRef.current = null;
               setSelectedOptionId(null);
             } else {
               handleQuizComplete();

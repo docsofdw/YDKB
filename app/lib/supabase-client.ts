@@ -17,19 +17,25 @@ export type Difficulty = 'easy' | 'hard' | 'hof';
  * This is safe to use in client components
  */
 export function createSafeClient() {
+  // Check if we're in a browser environment
+  const isBrowser = typeof window !== 'undefined';
+  
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return document.cookie.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1]
+          if (!isBrowser) return undefined;
+          return document.cookie.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1];
         },
         set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean }) {
-          document.cookie = `${name}=${value}; path=${options.path || '/'}; max-age=${options.maxAge || 31536000}`
+          if (!isBrowser) return;
+          document.cookie = `${name}=${value}; path=${options.path || '/'}; max-age=${options.maxAge || 31536000}`;
         },
         remove(name: string, options: { path?: string }) {
-          document.cookie = `${name}=; path=${options.path || '/'}; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+          if (!isBrowser) return;
+          document.cookie = `${name}=; path=${options.path || '/'}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
         }
       },
       global: {
@@ -366,4 +372,41 @@ export async function searchColleges(searchTerm: string): Promise<string[]> {
     console.error('Error in searchColleges:', error);
     return [];
   }
+}
+
+/**
+ * Get the URL for a player's image based on their ID
+ * @param playerId - The player's ID (can be string or number)
+ * @returns The URL for the player's image
+ */
+export function getPlayerImageUrl(playerId: string | number): string {
+  if (!playerId) {
+    return '/images/player-placeholder.png';
+  }
+  
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const bucketName = 'player-images';
+  
+  // Format the player ID consistently
+  const formattedId = typeof playerId === 'number' ? playerId : playerId;
+  
+  // Return the direct URL to the image in the Supabase bucket
+  return `${baseUrl}/storage/v1/object/public/${bucketName}/${formattedId}.jpg`;
+}
+
+/**
+ * Custom loader for Next.js Image component when using Supabase images
+ * This can be used with the loader prop of the Next.js Image component
+ */
+export function supabaseImageLoader({ src, width, quality }: { src: string; width: number; quality?: number }) {
+  // If the src is already a full URL, just return it with width and quality params
+  if (src.startsWith('http')) {
+    return `${src}?width=${width}&quality=${quality || 75}`;
+  }
+  
+  // Otherwise, assume it's a player ID and build the URL
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const bucketName = 'player-images';
+  
+  return `${baseUrl}/storage/v1/object/public/${bucketName}/${src}.jpg?width=${width}&quality=${quality || 75}`;
 } 
